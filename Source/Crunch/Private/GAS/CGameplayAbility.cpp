@@ -10,7 +10,7 @@
 
 UCGameplayAbility::UCGameplayAbility()
 {
-    ActivationBlockedTags.AddTag();
+    ActivationBlockedTags.AddTag(UCAbilitySystemStatics::GetStunStatTag());
 }
 
 UAnimInstance* UCGameplayAbility::GetOwnerAnimInstance() const

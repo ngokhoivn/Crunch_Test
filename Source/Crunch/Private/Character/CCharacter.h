@@ -75,7 +75,7 @@ private:
 	/*					Stun			          */
 	/**********************************************/
 private: 
-	UPROPERTY(EditDefaultOnly, Category = "Stun")
+	UPROPERTY(EditDefaultsOnly, Category = "Stun")
 	UAnimMontage* StunMontage;
 
 	virtual void OnStun();
