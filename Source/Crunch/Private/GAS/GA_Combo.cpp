@@ -9,7 +9,7 @@
 
 UGA_Combo::UGA_Combo()
 {
-	AbilityTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Ability.Combo")));
+	AbilityTags.AddTag(UCAbilitySystemStatics::GetBasicAttackAbilityTag());
 	BlockAbilitiesWithTag.AddTag(UCAbilitySystemStatics::GetBasicAttackAbilityTag());
 }
 

@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GAS/CGameplayAbility.h"
+#include "GAS/CGameplayAbilityTypes.h"
 #include "UpperCut.generated.h"
 
 /**
@@ -24,6 +25,9 @@ private:
 	TSubclassOf<UGameplayEffect> LaunchDamageEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	float UpperComboHoldSpeed = 200.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	float UpperCutLaunchSpeed = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
@@ -33,6 +37,8 @@ private:
 
 	static FGameplayTag GetUpperCutLaunchTag();
 
+	//const FGenericDamgeEffectDef* GetDamageEffectDefForCurrentCombo() const;
+
 	UFUNCTION()
 	void StartLaunching(FGameplayEventData EventData);
 
@@ -41,6 +47,9 @@ private:
 
 	UFUNCTION()
 	void HandleComboCommitEvent(FGameplayEventData EventData);
+	
+	UFUNCTION()
+	void HandleComboDamageEvent(FGameplayEventData EventData);
 
 	FName NextComboName;
 };

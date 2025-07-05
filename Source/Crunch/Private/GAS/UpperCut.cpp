@@ -1,11 +1,12 @@
-// UpperCut.cpp
+﻿// UpperCut.cpp
 
 #include "GAS/UpperCut.h"
-#include "GAS/GA_Combo.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-#include "GameplayTagsManager.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "GAS/CAbilitySystemStatics.h"
+#include "GAS/GA_Combo.h"
+#include "GameplayTagsManager.h"
 
 void UUpperCut::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
@@ -48,17 +49,17 @@ FGameplayTag UUpperCut::GetUpperCutLaunchTag()
 
 void UUpperCut::StartLaunching(FGameplayEventData EventData)
 {
-    TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(
-        EventData.TargetData,
-        TargetSweepSphereRadius,
-        ETeamAttitude::Hostile,
-        ShouldDrawDebug());
-
-    
-    PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperCutLaunchSpeed);
         
     if (K2_HasAuthority())
     {
+        TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(
+            EventData.TargetData,
+            TargetSweepSphereRadius,
+            ETeamAttitude::Hostile,
+            ShouldDrawDebug());
+
+    
+        PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperCutLaunchSpeed);
         for (const FHitResult& HitResult : TargetHitResults)
         {
             PushTarget(HitResult.GetActor(), FVector::UpVector * UpperCutLaunchSpeed);
@@ -75,7 +76,9 @@ void UUpperCut::StartLaunching(FGameplayEventData EventData)
     WaitComboCommitEvent->EventReceived.AddDynamic(this, &UUpperCut::HandleComboCommitEvent);
     WaitComboCommitEvent->ReadyForActivation();
 
-
+    UAbilityTask_WaitGameplayEvent* WaitComboDamageEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, UGA_Combo::GetComboTargetEventTag());
+    WaitComboDamageEvent->EventReceived.AddDynamic(this, &UUpperCut::HandleComboDamageEvent);
+    WaitComboDamageEvent->ReadyForActivation();
 }
 
 void UUpperCut::HandleComboChangeEvent(FGameplayEventData EventData)
@@ -96,5 +99,39 @@ void UUpperCut::HandleComboChangeEvent(FGameplayEventData EventData)
 
 void UUpperCut::HandleComboCommitEvent(FGameplayEventData EventData)
 {
-    UE_LOG(LogTemp, Warning, TEXT("Combo Change Commit"));
+    if (NextComboName == NAME_None)
+    {
+        return;
+    }
+
+    UAnimInstance* OwnerAnimInst = GetOwnerAnimInstance();
+    if (!OwnerAnimInst)
+    {
+        return;
+    }
+
+    OwnerAnimInst->Montage_SetNextSection(OwnerAnimInst->Montage_GetCurrentSection(UpperCutMontage), NextComboName, UpperCutMontage);
 }
+
+void UUpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
+{
+    if (K2_HasAuthority())
+    {
+        TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(
+            EventData.TargetData,
+            TargetSweepSphereRadius,
+            ETeamAttitude::Hostile,
+            ShouldDrawDebug());
+
+
+        PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperComboHoldSpeed);
+        for (const FHitResult& HitResult : TargetHitResults)
+        {
+            PushTarget(HitResult.GetActor(), FVector::UpVector * UpperComboHoldSpeed);
+            ApplyGameplayEffectToHitResultActor(HitResult, LaunchDamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
+
+        }
+    }
+
+}
+
