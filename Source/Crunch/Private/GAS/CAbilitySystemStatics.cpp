@@ -4,7 +4,7 @@
 
 FGameplayTag UCAbilitySystemStatics::GetBasicAttackAbilityTag()
 {
-	return FGameplayTag::RequestGameplayTag("ability.basicattack");
+	return FGameplayTag::RequestGameplayTag("Ability.BasicAttack");
 }
 
 FGameplayTag UCAbilitySystemStatics::GetDeadStatTag()
@@ -15,4 +15,9 @@ FGameplayTag UCAbilitySystemStatics::GetDeadStatTag()
 FGameplayTag UCAbilitySystemStatics::GetStunStatTag()
 {
 	return FGameplayTag::RequestGameplayTag("Stats.Stun");
+}
+
+FGameplayTag UCAbilitySystemStatics::GetBasicAttackInputPressedTag()
+{
+	return FGameplayTag::RequestGameplayTag("Ability.BasicAttack.Pressed");
 }

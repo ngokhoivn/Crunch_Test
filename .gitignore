@@ -5,3 +5,5 @@
 !/.gitignore
 !/Source/
 !/Source/**
+!/Config/
+!/Config/**

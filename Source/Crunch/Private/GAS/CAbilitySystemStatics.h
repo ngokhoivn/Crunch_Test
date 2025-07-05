@@ -15,4 +15,5 @@ public:
     static FGameplayTag GetBasicAttackAbilityTag();
 	static FGameplayTag GetDeadStatTag(); // Thẻ để xác định trạng thái chết của nhân vật
 	static FGameplayTag GetStunStatTag(); // Thẻ để xác định trạng thái Stun 
+    static FGameplayTag GetBasicAttackInputPressedTag();
 };

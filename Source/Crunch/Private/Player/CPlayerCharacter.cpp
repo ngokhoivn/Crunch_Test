@@ -2,6 +2,8 @@
 
 #include "Player/CPlayerCharacter.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "GAS/CAbilitySystemStatics.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -82,6 +84,13 @@ void ACPlayerCharacter::HandleAbilityInput(const FInputActionValue& InputActionV
 	{
 		GetAbilitySystemComponent()->AbilityLocalInputReleased((int32)InputID);
 	}
+
+	if (InputID == ECAbilityInputID::BasicAttack)
+	{
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UCAbilitySystemStatics::GetBasicAttackInputPressedTag(), FGameplayEventData());
+		Server_SendGameplayEventToSelf(UCAbilitySystemStatics::GetBasicAttackInputPressedTag(), FGameplayEventData());
+
+	}
 }
 
 void ACPlayerCharacter::SetInputEnabledFromPlayerController(bool bEnabled)
@@ -122,6 +131,7 @@ void ACPlayerCharacter::OnRespawn()
 	SetInputEnabledFromPlayerController(true);
 
 }
+
 
 FVector ACPlayerCharacter::GetLookRightDir() const
 {

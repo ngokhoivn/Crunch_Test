@@ -66,4 +66,5 @@ private:
 	virtual void OnDead() override;// Gọi khi nhân vật chết
 	virtual void OnRespawn() override; // Gọi khi nhân vật hồi sinh
 
+
 };
