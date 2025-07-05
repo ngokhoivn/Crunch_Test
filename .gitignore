@@ -1,0 +1,7 @@
+# Bỏ qua tất cả mọi thứ
+/*
+
+# Nhưng cho phép Git theo dõi:
+!/.gitignore
+!/Source/
+!/Source/**
