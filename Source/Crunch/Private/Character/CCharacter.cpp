@@ -258,7 +258,7 @@ void ACCharacter::StartDeathSequence()
 
 	PlayDeathAnimation();
 	SetStatusGaugeEnabled(false); // Tắt hiển thị gauge trạng thái
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None); // Dừng chuyển động của nhân vật
+	//GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None); // Dừng chuyển động của nhân vật
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision); // Tắt va chạm của capsule component
 
 	SetAIPerceptionStimuliSourceComponent(false); // Tắt cảm nhận kích thích AI
@@ -272,7 +272,7 @@ void ACCharacter::Respawn()
 
 	SetRaddollEnebled(false); // Tắt mô phỏng vật lý
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); // Bật lại va chạm của capsule component
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking); // Đặt lại chế độ di chuyển
+	//GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking); // Đặt lại chế độ di chuyển
 	GetMesh()->GetAnimInstance()->StopAllMontages(0.f); // Dừng tất cả các montage hoạt hình
 	SetStatusGaugeEnabled(true); // Bật hiển thị gauge trạng thái
 

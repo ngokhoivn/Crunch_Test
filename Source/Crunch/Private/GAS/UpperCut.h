@@ -21,23 +21,27 @@ public:
 	UUpperCut();
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	UPROPERTY(EditDefaultsOnly, Category = "Combo")
+	TMap<FName, FGenericDamageEffectDef> ComboDamageMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
 	TSubclassOf<UGameplayEffect> LaunchDamageEffect;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
-	float UpperComboHoldSpeed = 200.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float UpperComboHoldSpeed = 150.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
 	float UpperCutLaunchSpeed = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	float TargetSweepSphereRadius = 80.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	UAnimMontage* UpperCutMontage;
 
 	static FGameplayTag GetUpperCutLaunchTag();
 
-	//const FGenericDamgeEffectDef* GetDamageEffectDefForCurrentCombo() const;
+	const FGenericDamageEffectDef* GetDamageEffectDefForCurrentCombo() const;
 
 	UFUNCTION()
 	void StartLaunching(FGameplayEventData EventData);

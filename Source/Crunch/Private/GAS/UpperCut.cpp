@@ -47,6 +47,19 @@ FGameplayTag UUpperCut::GetUpperCutLaunchTag()
     return FGameplayTag::RequestGameplayTag("Ability.UpperCut.Launch");
 }
 
+const FGenericDamageEffectDef* UUpperCut::GetDamageEffectDefForCurrentCombo() const
+{
+    UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance();
+    if (OwnerAnimInstance)
+    {
+        FName CurrentComboName = OwnerAnimInstance->Montage_GetCurrentSection(UpperCutMontage);
+        const FGenericDamageEffectDef* EffectDef = ComboDamageMap.Find(CurrentComboName);
+        return EffectDef;
+    }
+
+    return nullptr;
+}
+
 void UUpperCut::StartLaunching(FGameplayEventData EventData)
 {
         
@@ -117,21 +130,19 @@ void UUpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 {
     if (K2_HasAuthority())
     {
-        TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(
-            EventData.TargetData,
-            TargetSweepSphereRadius,
-            ETeamAttitude::Hostile,
-            ShouldDrawDebug());
-
-
+        TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(EventData.TargetData, TargetSweepSphereRadius, ETeamAttitude::Hostile, ShouldDrawDebug());
         PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperComboHoldSpeed);
-        for (const FHitResult& HitResult : TargetHitResults)
+        const FGenericDamageEffectDef* EffectDef = GetDamageEffectDefForCurrentCombo();
+        if (!EffectDef)
         {
-            PushTarget(HitResult.GetActor(), FVector::UpVector * UpperComboHoldSpeed);
-            ApplyGameplayEffectToHitResultActor(HitResult, LaunchDamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
-
+            return;
+        }
+        for (FHitResult& HitResult : TargetHitResults)
+        {
+            FVector PushVel = GetAvatarActorFromActorInfo()->GetActorTransform().TransformVector(EffectDef->PushVelocity);
+            PushTarget(HitResult.GetActor(), PushVel);
+            ApplyGameplayEffectToHitResultActor(HitResult, EffectDef->DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
         }
     }
-
 }
 
