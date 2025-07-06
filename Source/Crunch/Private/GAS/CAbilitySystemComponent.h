@@ -20,6 +20,7 @@ public:
 	void ApplyInitialEffects();
 	void GiveInitialAbilities();
 	void ApplyFullStatEffects();
+	const TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
 	
 private:
 	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int Level);// Áp dụng hiệu ứng gameplay nếu có quyền

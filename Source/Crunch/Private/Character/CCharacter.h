@@ -7,6 +7,7 @@
 #include "GameplayTagContainer.h"
 #include "AbilitySystemInterface.h"
 #include "GenericTeamAgentInterface.h"
+#include "GAS/CGameplayAbilityTypes.h"
 #include "CCharacter.generated.h"
 
 UCLASS()
@@ -21,7 +22,7 @@ public:
 	void ClientSideInit();
 	bool IsLocallyControlledByPlayer() const;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	const TMap<ECAbilityInputID, TSubclassOf<class UGameplayAbility>>& GetAbilities();
 
 protected:
 	// Called when the game starts or when spawned

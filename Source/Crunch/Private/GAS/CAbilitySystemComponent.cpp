@@ -42,6 +42,11 @@ void UCAbilitySystemComponent::ApplyFullStatEffects()
 	AuthApplyGameplayEffect(FullStatEffect, 1); // Áp dụng hiệu ứng đầy đủ thuộc tính nếu có
 }
 
+const TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>>& UCAbilitySystemComponent::GetAbilities() const
+{
+	return Abilities;
+}
+
 
 
 void UCAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int Level)
