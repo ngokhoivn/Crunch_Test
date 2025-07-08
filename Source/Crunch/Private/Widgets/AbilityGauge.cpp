@@ -65,7 +65,6 @@ void UAbilityGauge::StartCooldown(float CooldownTimeRemaining, float CooldownDur
 
 	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &UAbilityGauge::CooldownFinished, CachedCooldownTimeRemaining);
 	GetWorld()->GetTimerManager().SetTimer(CooldownTimerUpdateHandle, this, &UAbilityGauge::UpdateCooldown, CooldownUpdateInterval, true, 0.f);
-
 }
 
 void UAbilityGauge::CooldownFinished()
@@ -73,6 +72,8 @@ void UAbilityGauge::CooldownFinished()
 	CachedCooldownDuration = CachedCooldownTimeRemaining = 0.f;
 	CooldownCounterText->SetVisibility(ESlateVisibility::Hidden);
 	GetWorld()->GetTimerManager().ClearTimer(CooldownTimerUpdateHandle);
+
+	Icon->GetDynamicMaterial()->SetScalarParameterValue(CooldownPercentParamname, 1.f );
 
 }
 
@@ -84,7 +85,7 @@ void UAbilityGauge::UpdateCooldown()
 
 	CooldownCounterText->SetText(FText::AsNumber(CachedCooldownTimeRemaining));
 
-
+	Icon->GetDynamicMaterial()->SetScalarParameterValue(CooldownPercentParamname, 1.f -  CachedCooldownTimeRemaining / CachedCooldownDuration);
 }
 
 
