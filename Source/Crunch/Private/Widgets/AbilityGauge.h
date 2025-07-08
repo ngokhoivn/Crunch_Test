@@ -38,6 +38,9 @@ public:
 	void ConfigureWithWidgetData(const FAbilityWidgetData* WidgetData);
 	
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Cooldown")
+	float CooldownUpdateInterval = 0.1f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "visual")
 	FName IconMaterialParamName = "Icon";
 
@@ -56,4 +59,21 @@ private:
 
 	UPROPERTY()
 	class UGameplayAbility* AbilityCDO;
+
+	void AbilityCommitted(UGameplayAbility* Ability);
+
+	void StartCooldown(float CooldownTimeRemaining, float CooldownDuration);
+
+	float CachedCooldownDuration;
+	float CachedCooldownTimeRemaining;
+
+	FTimerHandle CooldownTimerHandle;
+	FTimerHandle CooldownTimerUpdateHandle;
+
+	FNumberFormattingOptions WholeNumberFormattionOptions;
+	FNumberFormattingOptions TwoDigitNumberFormattingOption;
+
+	void CooldownFinished();
+	void UpdateCooldown();
+
 };
