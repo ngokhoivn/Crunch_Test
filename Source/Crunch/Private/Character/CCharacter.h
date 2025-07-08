@@ -51,6 +51,9 @@ public:
 private:
 	void DeathTagUpdated(const FGameplayTag Tag, int32 NewCount); // Xử lý khi thẻ Dead thay đổi
 	void StunTagUpdated(const FGameplayTag Tag, int32 NewCount); // Xử lý khi thẻ Stun thay đổi
+	void AimTagUpdated(const FGameplayTag Tag, int32 NewCount); // Xử lý khi thẻ Stun thay đổi
+	void SetIsAimming(bool bIsAimming);
+
 	void BindGASChangeDelegates();  // Liên kết các delegate thay đổi thuộc tính GAS
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")

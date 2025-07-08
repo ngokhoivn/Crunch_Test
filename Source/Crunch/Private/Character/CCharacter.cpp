@@ -137,6 +137,17 @@ void ACCharacter::StunTagUpdated(const FGameplayTag Tag, int32 NewCount)
 	}
 }
 
+void ACCharacter::AimTagUpdated(const FGameplayTag Tag, int32 NewCount)
+{
+	SetIsAimming(NewCount != 0);
+}
+
+void ACCharacter::SetIsAimming(bool bIsAimming)
+{
+	bUseControllerRotationYaw = bIsAimming;
+	GetCharacterMovement()->bOrientRotationToMovement = !bIsAimming;
+}
+
 void ACCharacter::BindGASChangeDelegates()
 {
 	if (CAbilitySystemComponent) // Kiểm tra xem CAbilitySystemComponent có hợp lệ không
@@ -144,6 +155,7 @@ void ACCharacter::BindGASChangeDelegates()
 		// Đăng ký delegate để lắng nghe sự thay đổi thuộc tính sức khỏe
 		CAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).AddUObject(this, &ACCharacter::DeathTagUpdated);
 		CAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetStunStatTag()).AddUObject(this, &ACCharacter::StunTagUpdated);
+		CAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetAimStatTag()).AddUObject(this, &ACCharacter::AimTagUpdated);
 
 	}
 }
