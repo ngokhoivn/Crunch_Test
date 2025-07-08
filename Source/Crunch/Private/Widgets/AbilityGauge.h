@@ -33,6 +33,7 @@ class UAbilityGauge : public UUserWidget, public IUserObjectListEntry
 	GENERATED_BODY()
 
 public:
+	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	void ConfigureWithWidgetData(const FAbilityWidgetData* WidgetData);
 	
@@ -52,4 +53,7 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* CostText;       // Hiển thị chi phí (năng lượng, mana...)
+
+	UPROPERTY()
+	class UGameplayAbility* AbilityCDO;
 };

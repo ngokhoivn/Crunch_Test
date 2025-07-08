@@ -6,9 +6,12 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CAbilitySystemStatics.generated.h"
 
+class UGameplayAbility;
+
 UCLASS()
 
-class UCAbilitySystemStatics : public UBlueprintFunctionLibrary {
+class UCAbilitySystemStatics : public UBlueprintFunctionLibrary 
+{
     GENERATED_BODY()
 public:
     UFUNCTION(BlueprintCallable, Category = "Ability")
@@ -16,4 +19,7 @@ public:
 	static FGameplayTag GetDeadStatTag(); // Thẻ để xác định trạng thái chết của nhân vật
 	static FGameplayTag GetStunStatTag(); // Thẻ để xác định trạng thái Stun 
     static FGameplayTag GetBasicAttackInputPressedTag();
+
+    static float GetStaticCooldownDurationForAbility(const UGameplayAbility* Ability);
+    static float GetStaticCostForAbility(const UGameplayAbility* Ability);
 };
