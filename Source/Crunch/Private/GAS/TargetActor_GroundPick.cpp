@@ -97,7 +97,11 @@ FVector ATargetActor_GroundPick::GetTargetPoint() const
 	if (!TraceResult.bBlockingHit)
 	{
 		GetWorld()->LineTraceSingleByChannel(TraceResult, TraceEnd, TraceEnd + FVector::DownVector * TNumericLimits<float>::Max(), ECC_Target);
+	}
 
+	if (bShouldDrawDebug) 
+	{
+		DrawDebugSphere(GetWorld(), TraceResult.ImpactPoint, TargetAreaRadius, 32, FColor::Red);
 	}
 
 	if (!TraceResult.bBlockingHit)
