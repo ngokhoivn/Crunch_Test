@@ -2,7 +2,9 @@
 
 
 #include "GAS/GA_GroundBlast.h"
+#include "AbilitySystemComponent.h"
 #include "GAS/CAbilitySystemStatics.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "GAS/TargetActor_GroundPick.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
@@ -40,6 +42,12 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetDataHandle)
 {
+	TArray<AActor*> TargetActors = UAbilitySystemBlueprintLibrary::GetAllActorsFromTargetData(TargetDataHandle);
+
+	for (AActor* Target : TargetActors)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Find Target:%s"), *Target->GetName());
+	}
 	UE_LOG(LogTemp, Warning, TEXT("Target Confirmed"));
 	K2_EndAbility();
 }
