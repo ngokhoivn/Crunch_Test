@@ -53,6 +53,7 @@ private:
 	void StunTagUpdated(const FGameplayTag Tag, int32 NewCount); // Xử lý khi thẻ Stun thay đổi
 	void AimTagUpdated(const FGameplayTag Tag, int32 NewCount); // Xử lý khi thẻ Stun thay đổi
 	void SetIsAimming(bool bIsAimming);
+	virtual void OnAimStateChanged(bool bIsAimming);
 
 	void BindGASChangeDelegates();  // Liên kết các delegate thay đổi thuộc tính GAS
 
