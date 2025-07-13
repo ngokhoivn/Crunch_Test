@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GAS/TargetActor_GroundPick.h"
@@ -43,12 +43,13 @@ void ATargetActor_GroundPick::ConfirmTargetingAndContinue()
 
 		TargetActors.Add(OverlapResult.GetActor());
 	}
-
 	FGameplayAbilityTargetDataHandle TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActorArray(TargetActors.Array(), false);
 
+	// Lưu thông tin( vị trí va chạm, normal, actor bị trúng) cho cú đánh đơn lẻ
 	FGameplayAbilityTargetData_SingleTargetHit* HitLoc = new FGameplayAbilityTargetData_SingleTargetHit;
+	// Thiết lập điểm va chạm ImpactPoint trong Hit Result bằng vị trí hiện tại của Actor
 	HitLoc->HitResult.ImpactPoint = GetActorLocation();
-
+	// Thêm data vào FGameplayABilityTargetDataHandle để truyền dữ liệu
 	TargetData.Add(HitLoc);
 
 	TargetDataReadyDelegate.Broadcast(TargetData);

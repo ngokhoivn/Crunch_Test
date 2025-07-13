@@ -23,6 +23,11 @@ FGameplayTag UCAbilitySystemStatics::GetAimStatTag()
 	return FGameplayTag::RequestGameplayTag("Stats.Aim");
 }
 
+FGameplayTag UCAbilitySystemStatics::GetCameraShakeGameplayCueTag()
+{
+	return FGameplayTag::RequestGameplayTag("GameplayCue.CameraShake");
+}
+
 FGameplayTag UCAbilitySystemStatics::GetBasicAttackInputPressedTag()
 {
 	return FGameplayTag::RequestGameplayTag("Ability.BasicAttack.Pressed");
