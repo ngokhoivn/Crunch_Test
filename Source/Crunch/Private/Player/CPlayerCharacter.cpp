@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "Crunch/Crunch.h"
 #include "GAS/CAbilitySystemStatics.h"
+#include "GAS/CHeroAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
@@ -25,6 +26,8 @@ ACPlayerCharacter::ACPlayerCharacter()
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0, 720.f, 0.f);
+
+	HeroAttributeSet = CreateDefaultSubobject<UCHeroAttributeSet>(" Hero Attribute Set");
 }
 
 void ACPlayerCharacter::PawnClientRestart()
