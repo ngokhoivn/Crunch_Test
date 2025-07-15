@@ -9,7 +9,7 @@
 #include "CAbilitySystemComponent.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class UCAbilitySystemComponent : public UAbilitySystemComponent
@@ -21,12 +21,13 @@ public:
 	void ServerSideInit();
 	void ApplyFullStatEffect();
 	const TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
-	
+
 private:
 	void ApplyInitialEffects();
 	void GiveInitialAbilities();
-	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int Level);// Áp dụng hiệu ứng gameplay nếu có quyền
+	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int Level = 1);// Áp dụng hiệu ứng gameplay nếu có quyền
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData); // Xử lý khi thuộc tính sức khỏe thay đổi
+	void ManaUpdated(const FOnAttributeChangeData& ChangeData);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
 	TSubclassOf<UGameplayEffect> FullStatEffect;	// Hiệu ứng áp dụng đầy đủ thuộc tính

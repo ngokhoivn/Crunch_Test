@@ -2,10 +2,11 @@
 
 
 #include "GAS/CAbilitySystemComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "GAS/CGameplayAbilityTypes.h"
 #include "GAS/CAttributeSet.h"
+#include "GAS/CAbilitySystemStatics.h"
 #include "GAS/CHeroAttributeSet.h"
-
 
 UCAbilitySystemComponent::UCAbilitySystemComponent()
 {
@@ -105,12 +106,68 @@ void UCAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayEffe
 
 void UCAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& ChangeData)
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority()) return;
 
-	if (!GetOwner()) return; // Trả về nếu không có chủ sở hữu
-
-	// Kiểm tra nếu sức khỏe <= 0 và chủ sở hữu có quyền điều khiển
-	if (ChangeData.NewValue <= 0.0f && GetOwner()->HasAuthority() && DeathEffect) 
+	bool bFound = false;
+	float MaxHealth = GetGameplayAttributeValue(UCAttributeSet::GetMaxHealthAttribute(), bFound);
+	if (bFound && ChangeData.NewValue >= MaxHealth)
 	{
-		AuthApplyGameplayEffect(DeathEffect, 1); // Áp dụng hiệu ứng chết
+		if (!HasMatchingGameplayTag(UCAbilitySystemStatics::GetHealthFullStatTag()))
+		{
+			//This is done local only.
+			AddLooseGameplayTag(UCAbilitySystemStatics::GetHealthFullStatTag());
+		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(UCAbilitySystemStatics::GetHealthFullStatTag());
+	}
+
+	if (ChangeData.NewValue <= 0)
+	{
+		if (!HasMatchingGameplayTag(UCAbilitySystemStatics::GetHealthEmptyStatTag()))
+		{
+			AddLooseGameplayTag(UCAbilitySystemStatics::GetHealthEmptyStatTag());
+
+			if (DeathEffect) 
+				AuthApplyGameplayEffect(DeathEffect);
+		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(UCAbilitySystemStatics::GetHealthEmptyStatTag());
 	}
 }
+
+void UCAbilitySystemComponent::ManaUpdated(const FOnAttributeChangeData& ChangeData)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority()) return;
+
+	bool bFound = false;
+	float MaxMana = GetGameplayAttributeValue(UCAttributeSet::GetMaxManaAttribute(), bFound);
+	if (bFound && ChangeData.NewValue >= MaxMana)
+	{
+		if (!HasMatchingGameplayTag(UCAbilitySystemStatics::GetManaFullStatTag()))
+		{
+			//This is done local only.
+			AddLooseGameplayTag(UCAbilitySystemStatics::GetManaFullStatTag());
+		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(UCAbilitySystemStatics::GetManaFullStatTag());
+	}
+
+	if (ChangeData.NewValue <= 0)
+	{
+		if (!HasMatchingGameplayTag(UCAbilitySystemStatics::GetManaEmptyStatTag()))
+		{
+			AddLooseGameplayTag(UCAbilitySystemStatics::GetManaEmptyStatTag());
+		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(UCAbilitySystemStatics::GetManaEmptyStatTag());
+	}
+}
+
