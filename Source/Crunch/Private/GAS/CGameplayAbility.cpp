@@ -7,6 +7,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 UCGameplayAbility::UCGameplayAbility()
 {
@@ -125,10 +127,42 @@ void UCGameplayAbility::PushTargets(const TArray<AActor*>& Targets, const FVecto
     }
 }
 
-void UCGameplayAbility::PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle, const FVector& PushVel)
+void UCGameplayAbility::PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle, const FVector& PushForce, float PushDuration)
 {
     TArray<AActor*> Targets = UAbilitySystemBlueprintLibrary::GetAllActorsFromTargetData(TargetDataHandle);
-    PushTargets(Targets, PushVel);
+
+    for (AActor* Target : Targets)
+    {
+        if (ACharacter* TargetCharacter = Cast<ACharacter>(Target))
+        {
+            if (UCharacterMovementComponent* MovementComponent = TargetCharacter->GetCharacterMovement())
+            {
+                MovementComponent->bServerAcceptClientAuthoritativePosition = true;
+
+                MovementComponent->SetMovementMode(MOVE_Falling);
+                TSharedPtr<FRootMotionSource_ConstantForce> ConstantForce = MakeShared<FRootMotionSource_ConstantForce>();
+                ConstantForce->AccumulateMode = ERootMotionAccumulateMode::Override;
+                ConstantForce->Priority = 500;
+                ConstantForce->Force = PushForce;
+                ConstantForce->Duration = PushDuration;
+                MovementComponent->ApplyRootMotionSource(ConstantForce);
+
+                FTimerHandle TimerHandle;
+                GetWorld()->GetTimerManager().SetTimer(
+                    TimerHandle,
+                    [MovementComponent]()
+                    {
+                        if (MovementComponent)
+                        {
+                            MovementComponent->bServerAcceptClientAuthoritativePosition = false;
+                        }
+                    },
+                    PushDuration,
+                    false
+                );
+            }
+        }
+    }
 }
 
 ACharacter* UCGameplayAbility::GetOwningAvatarCharacter()

@@ -2,6 +2,7 @@
 
 #include "AI/MinionBarrack.h"
 #include "AI/Minion.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/PlayerStart.h"
 
 // Sets default values
@@ -72,6 +73,7 @@ void AMinionBarrack::SpawnNewGroup()
 
 		NextAvaliableMinion->SetActorTransform(SpawnTransform); // Đặt vị trí spawn cho minion
 		NextAvaliableMinion->Activate(); // Kích hoạt minion nếu nó đã "chết"
+
 		--i;
 
 	}

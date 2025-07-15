@@ -55,4 +55,13 @@ private:
 	void DoDamage(FGameplayEventData Data);
 
 	FName NextComboName;
+
+	//Sửa lỗi RPC
+	UFUNCTION()
+	void ProcessNextDamageTarget();
+
+	FTimerHandle DamageProcessingTimer;
+	TArray<FHitResult> PendingHitResults;
+	int32 CurrentDamageIndex;
+	TSubclassOf<UGameplayEffect> CurrentDamageEffect;
 };

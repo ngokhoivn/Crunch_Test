@@ -40,7 +40,7 @@ void UCAbilitySystemComponent::GiveInitialAbilities()
 
 }
 
-void UCAbilitySystemComponent::ApplyFullStatEffects()
+void UCAbilitySystemComponent::ApplyFullStatEffect()
 {
 	AuthApplyGameplayEffect(FullStatEffect, 1); // Áp dụng hiệu ứng đầy đủ thuộc tính nếu có
 }

@@ -31,4 +31,5 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "AI")
 	FName GoalBlackboardKeyName = "Goal"; // Tên khóa trong Blackboard để lưu mục tiêu
+
 };

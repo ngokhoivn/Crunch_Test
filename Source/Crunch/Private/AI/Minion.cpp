@@ -3,6 +3,7 @@
 
 #include "AI/Minion.h"
 #include "AIController.h"
+#include "GAS/CAttributeSet.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 
@@ -20,6 +21,7 @@ bool AMinion::IsActive() const
 void AMinion::Activate()
 {
 	RespawnImmediately();
+
 }
 
 void AMinion::SetGoal(AActor* Goal)

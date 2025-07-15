@@ -131,36 +131,54 @@ void UGA_Combo::ComboChangedEventReceived(FGameplayEventData Data)
 
 void UGA_Combo::DoDamage(FGameplayEventData Data)
 {
-	TArray<FHitResult> HitResults = GetHitResultsFromSweepLocationTargetData(Data.TargetData, TargetSweepShereRadius);
+	// Dọn timer cũ
+	GetWorld()->GetTimerManager().ClearTimer(DamageProcessingTimer);
+	PendingHitResults.Empty();
+	CurrentDamageIndex = 0;
 
-	for (const FHitResult& HitResult : HitResults)
+	// Lưu các mục tiêu
+	PendingHitResults = GetHitResultsFromSweepLocationTargetData(Data.TargetData, TargetSweepShereRadius);
+	CurrentDamageEffect = GetDamageEffectForCurrentCombo();
+
+	if (PendingHitResults.Num() > 0 && CurrentDamageEffect)
 	{
-		TSubclassOf<UGameplayEffect> GameplayEffect = GetDamageEffectForCurrentCombo();
-		FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec( 
-			GameplayEffect, 
-			GetAbilityLevel(GetCurrentAbilitySpecHandle(), 
-			GetCurrentActorInfo())
+		// Gây damage từng mục tiêu một sau mỗi 0.05 giây
+		GetWorld()->GetTimerManager().SetTimer(
+			DamageProcessingTimer,
+			this,
+			&UGA_Combo::ProcessNextDamageTarget,
+			0.05f,
+			true,
+			0.0f
 		);
-
-		FGameplayEffectContextHandle EffectContext = MakeEffectContext(
-			GetCurrentAbilitySpecHandle(),
-			GetCurrentActorInfo()		
-		); // Tạo context cho hiệu ứng
-
-		EffectContext.AddHitResult(HitResult); // Thêm hit result vào context
-
-		EffectSpecHandle.Data->SetContext(EffectContext); // Gán context vào hiệu ứng
-
-		ApplyGameplayEffectSpecToTarget(
-			GetCurrentAbilitySpecHandle(),
-			CurrentActorInfo,
-			CurrentActivationInfo,
-			EffectSpecHandle,
-			UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(HitResult.GetActor())
-		);
-
-		ApplyGameplayEffectToHitResultActor(HitResult, GameplayEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 	}
 }
+
+
+void UGA_Combo::ProcessNextDamageTarget()
+{
+	if (CurrentDamageIndex < PendingHitResults.Num())
+	{
+		const FHitResult& HitResult = PendingHitResults[CurrentDamageIndex];
+
+		ApplyGameplayEffectToHitResultActor(
+			HitResult,
+			CurrentDamageEffect,
+			GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)
+		);
+
+		// Có thể thêm hiệu ứng camera shake, âm thanh, hitstop tại đây
+
+		CurrentDamageIndex++;
+	}
+	else
+	{
+		// Xong hết
+		GetWorld()->GetTimerManager().ClearTimer(DamageProcessingTimer);
+		PendingHitResults.Empty();
+		CurrentDamageIndex = 0;
+	}
+}
+
 
 

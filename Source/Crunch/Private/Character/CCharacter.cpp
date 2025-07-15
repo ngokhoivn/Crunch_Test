@@ -160,7 +160,7 @@ void ACCharacter::BindGASChangeDelegates()
 {
 	if (CAbilitySystemComponent) // Kiểm tra xem CAbilitySystemComponent có hợp lệ không
 	{
-		// Đăng ký delegate để lắng nghe sự thay đổi thuộc tính sức khỏe
+		// Đăng ký delegate để lắng nghe sự thay đổi thuộc tính 
 		CAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).AddUObject(this, &ACCharacter::DeathTagUpdated);
 		CAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetStunStatTag()).AddUObject(this, &ACCharacter::StunTagUpdated);
 		CAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetAimStatTag()).AddUObject(this, &ACCharacter::AimTagUpdated);
@@ -312,7 +312,7 @@ void ACCharacter::Respawn()
 
 	if (CAbilitySystemComponent)
 	{
-		CAbilitySystemComponent->ApplyFullStatEffects(); // Áp dụng lại hiệu ứng đầy đủ thuộc tính
+		CAbilitySystemComponent->ApplyFullStatEffect(); // Áp dụng lại hiệu ứng đầy đủ thuộc tính
 	}
 }
 
@@ -344,11 +344,11 @@ void ACCharacter::SetAIPerceptionStimuliSourceComponent(bool bIsEnabled)
 	}
 	if (bIsEnabled)
 	{
-		PerceptionStimuliSourceComponent->RegisterForSense(UAISense_Sight::StaticClass()); // Đăng ký cảm nhận thị giác
+		PerceptionStimuliSourceComponent->RegisterWithPerceptionSystem();
 	}
 	else
 	{
-		PerceptionStimuliSourceComponent->UnregisterFromSense(UAISense_Sight::StaticClass()); // Hủy đăng ký cảm nhận thị giác
+		PerceptionStimuliSourceComponent->UnregisterFromPerceptionSystem();
 	}
 }
 

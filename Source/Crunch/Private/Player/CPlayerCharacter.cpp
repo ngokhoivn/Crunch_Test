@@ -91,7 +91,6 @@ void ACPlayerCharacter::HandleAbilityInput(const FInputActionValue& InputActionV
 	{
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UCAbilitySystemStatics::GetBasicAttackInputPressedTag(), FGameplayEventData());
 		Server_SendGameplayEventToSelf(UCAbilitySystemStatics::GetBasicAttackInputPressedTag(), FGameplayEventData());
-
 	}
 }
 

@@ -44,4 +44,5 @@ private:
 
 	UFUNCTION()
 	void TargetCanceled(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
+
 };

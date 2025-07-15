@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GAS/GA_GroundBlast.h"
 #include "AbilitySystemComponent.h"
 #include "GAS/CAbilitySystemStatics.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GAS/TargetActor_GroundPick.h"
+#include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 
@@ -45,7 +45,6 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		GroundPickActor->SetTargetTraceRange(TargetTraceRange);
 	}
 	WaitTargetDataTask->FinishSpawningActor(this, TargetActor);
-
 }
 
 void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetDataHandle)
@@ -56,17 +55,24 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 		return;
 	}
 
+	// Authoritative Logic - chỉ chạy trên Server
 	if (K2_HasAuthority())
 	{
 		BP_ApplyGameplayEffectToTarget(TargetDataHandle, DamageEffectDef.DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
-		PushTargets(TargetDataHandle, DamageEffectDef.PushVelocity);
 	}
 
+	FVector PushForce = FVector(0.0f, 0.0f, 300.0f);                                                           
+	PushTargets(TargetDataHandle, PushForce, 0.5f);
+
+	// Cosmetic Effects - có thể chạy trên tất cả clients
 	FGameplayCueParameters BlastingGameplayCueParams;
 	BlastingGameplayCueParams.Location = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 1).ImpactPoint;
 	BlastingGameplayCueParams.RawMagnitude = TargetAreaRadius;
 
 	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(BlastGameplayCueTag, BlastingGameplayCueParams);
+
+	APlayerController* PC = GetAvatarActorFromActorInfo()->GetInstigatorController<APlayerController>();
+
 	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(UCAbilitySystemStatics::GetCameraShakeGameplayCueTag(), BlastingGameplayCueParams);
 
 	UAnimInstance* OwnerAnimInst = GetOwnerAnimInstance();
@@ -80,7 +86,7 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 
 void UGA_GroundBlast::TargetCanceled(const FGameplayAbilityTargetDataHandle& TargetDataHandle)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Target Canceled"));
 	K2_EndAbility();
-
 }
+
+

@@ -19,7 +19,7 @@ public:
 	UCAbilitySystemComponent();
 	void ApplyInitialEffects();
 	void GiveInitialAbilities();
-	void ApplyFullStatEffects();
+	void ApplyFullStatEffect();
 	const TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
 	
 private:
