@@ -8,6 +8,9 @@
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "GameplayTagsManager.h"
+#include "AbilitySystemGlobals.h"
+#include "GameplayCueManager.h"
 
 UGA_GroundBlast::UGA_GroundBlast()
 {
@@ -49,36 +52,34 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetDataHandle)
 {
-	if (!K2_CommitAbility())
-	{
-		K2_EndAbility();
-		return;
-	}
-
-	// Authoritative Logic - chỉ chạy trên Server
-	if (K2_HasAuthority())
+	if (HasAuthority(&CurrentActivationInfo) && K2_CommitAbility())
 	{
 		BP_ApplyGameplayEffectToTarget(TargetDataHandle, DamageEffectDef.DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
-	}
 
-	FVector PushForce = FVector(0.0f, 0.0f, 300.0f);                                                           
-	PushTargets(TargetDataHandle, PushForce, 0.5f);
+		FVector PushForce = FVector(0.0f, 0.0f, 300.0f);
+		PushTargets(TargetDataHandle, PushForce, 0.5f);
 
-	// Cosmetic Effects - có thể chạy trên tất cả clients
-	FGameplayCueParameters BlastingGameplayCueParams;
-	BlastingGameplayCueParams.Location = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 1).ImpactPoint;
-	BlastingGameplayCueParams.RawMagnitude = TargetAreaRadius;
+		if (TargetDataHandle.Num() > 0)
+		{
+			FGameplayCueParameters BlastingParams;
+			const FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 0);
+			if (HitResult.IsValidBlockingHit())
+			{
+				BlastingParams.Location = HitResult.ImpactPoint;
+				BlastingParams.Normal = HitResult.ImpactNormal;
+				BlastingParams.RawMagnitude = TargetAreaRadius;
 
-	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(BlastGameplayCueTag, BlastingGameplayCueParams);
-
-	APlayerController* PC = GetAvatarActorFromActorInfo()->GetInstigatorController<APlayerController>();
-
-	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(UCAbilitySystemStatics::GetCameraShakeGameplayCueTag(), BlastingGameplayCueParams);
-
-	UAnimInstance* OwnerAnimInst = GetOwnerAnimInstance();
-	if (OwnerAnimInst)
-	{
-		OwnerAnimInst->Montage_Play(CastMontage);
+				FGameplayEffectContextHandle ContextHandle = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
+				ContextHandle.AddHitResult(HitResult);
+				BlastingParams.EffectContext = ContextHandle;
+				
+				if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+				{
+					static FGameplayTag ExplosionCueTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.GroundBlast.Explosion"));
+					ASC->ExecuteGameplayCue(ExplosionCueTag, BlastingParams);
+				}
+			}
+		}
 	}
 
 	K2_EndAbility();

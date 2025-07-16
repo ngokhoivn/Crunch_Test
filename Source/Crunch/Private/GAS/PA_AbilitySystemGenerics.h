@@ -40,7 +40,7 @@ private:
 	UDataTable* BaseStatDataTable;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Level")
-	FName ExperienceRowName = "ExperieneNeededToReachLevel";
+	FName ExperienceRowName = "ExperienceNeededToReachLevel";
 
 	UPROPERTY(EditDefaultsOnly, Category = "Level")
 	UCurveTable* ExperienceCurveTable;

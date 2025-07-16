@@ -36,6 +36,8 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "GameplayAbility")
 	void ApplyGameplayEffectToHitResultActor(const FHitResult& HitResult, TSubclassOf<UGameplayEffect> GameplayEffect, int Level = 1);
+
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	bool bShouldDrawDebug = false;
