@@ -1,7 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "GAS/GAP_Dead.h"
+﻿#include "GAS/GAP_Dead.h"
 #include "GAS/CAbilitySystemStatics.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -11,111 +8,144 @@
 
 UGAP_Dead::UGAP_Dead()
 {
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
+    NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
-	FAbilityTriggerData TriggerData;
-	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
-	TriggerData.TriggerTag = UCAbilitySystemStatics::GetDeadStatTag();
+    FAbilityTriggerData TriggerData;
+    TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
+    TriggerData.TriggerTag = UCAbilitySystemStatics::GetDeadStatTag();
 
-	AbilityTriggers.Add(TriggerData);
-
-	ActivationBlockedTags.RemoveTag(UCAbilitySystemStatics::GetStunStatTag());
+    AbilityTriggers.Add(TriggerData);
+    ActivationBlockedTags.RemoveTag(UCAbilitySystemStatics::GetStunStatTag());
 }
 
-void UGAP_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UGAP_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+    const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayAbilityActivationInfo ActivationInfo,
+    const FGameplayEventData* TriggerEventData)
 {
-	if (K2_HasAuthority())
-	{
-		AActor* Killer = TriggerEventData->ContextHandle.GetEffectCauser();
-		if (!Killer || !UCAbilitySystemStatics::IsHero(Killer))
-		{
-			Killer = nullptr;
-		}
+    if (!K2_HasAuthority() || !TriggerEventData)
+    {
+        K2_EndAbility();
+        return;
+    }
 
-		TArray<AActor*> RewardTargets = GetRewardTargets();
-		for (const AActor* RewardTarget : RewardTargets)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Find Reward Target: %s"), *RewardTarget->GetName());
-		}
+    // 1. Xác định Killer
+    AActor* Killer = TriggerEventData->ContextHandle.GetEffectCauser();
+    if (!IsValid(Killer) || !UCAbilitySystemStatics::IsHero(Killer))
+    {
+        Killer = nullptr;
+    }
 
-		if (RewardTargets.Num() == 0 && !Killer)
-		{
-			K2_EndAbility();
-			return;
-		}
+    // 2. Lấy danh sách mục tiêu nhận thưởng
+    TArray<AActor*> RewardTargets = GetRewardTargets();
 
-		if (Killer && !RewardTargets.Contains(Killer))
-		{
-			RewardTargets.Add(Killer);
-		}
+    // 3. Kiểm tra điều kiện kết thúc sớm
+    if (RewardTargets.Num() == 0 && !Killer)
+    {
+        K2_EndAbility();
+        return;
+    }
 
-		bool bFound = false;
-		float SelfExperience = GetAbilitySystemComponentFromActorInfo_Ensured()->GetGameplayAttributeValue(UCHeroAttributeSet::GetExperienceAttribute(), bFound);
+    // 4. Thêm Killer vào danh sách nếu chưa có
+    if (Killer && !RewardTargets.Contains(Killer))
+    {
+        RewardTargets.Add(Killer);
+    }
 
-		float TotalExperienceReward = BaseExperienceReward + ExperienceRewardPerExperience * SelfExperience;
-		float TotalGoldReward = BaseGoldReward + GoldRewardPerExperience * SelfExperience;
+    // 5. Tính toán phần thưởng
+    bool bFound = false;
+    float SelfExperience = 0.f;
+    UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+    if (ASC)
+    {
+        SelfExperience = ASC->GetGameplayAttributeValue(UCHeroAttributeSet::GetExperienceAttribute(), bFound);
+    }
 
-		if (Killer)
-		{
-			float KillerExperienceReward = TotalExperienceReward * KillerRewardPortion;
-			float KillerGoldReward = TotalGoldReward * KillerRewardPortion;
+    float TotalExperienceReward = BaseExperienceReward + ExperienceRewardPerExperience * SelfExperience;
+    float TotalGoldReward = BaseGoldReward + GoldRewardPerExperience * SelfExperience;
 
-			FGameplayEffectSpecHandle EffectSpec = MakeOutgoingGameplayEffectSpec(RewardEffect);
-			//EffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetExperienceAttributeTag(), KillerExperienceReward);
-			//EffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetGoldAttributeTag(), KillerGoldReward);
+    // 6. Áp dụng phần thưởng cho Killer (nếu có)
+    if (Killer)
+    {
+        float KillerExperienceReward = TotalExperienceReward * KillerRewardPortion;
+        float KillerGoldReward = TotalGoldReward * KillerRewardPortion;
 
-			K2_ApplyGameplayEffectSpecToTarget(EffectSpec, UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(Killer));
+        FGameplayEffectSpecHandle KillerEffectSpec = MakeOutgoingGameplayEffectSpec(RewardEffect);
+        if (KillerEffectSpec.IsValid())
+        {
+            KillerEffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetExperienceAttributeTag(), KillerExperienceReward);
+            KillerEffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetGoldAttributeTag(), KillerGoldReward);
 
-			TotalExperienceReward -= KillerExperienceReward;
-			TotalGoldReward -= KillerGoldReward;
-		}
+            ApplyGameplayEffectSpecToTarget(Handle, ActorInfo, ActivationInfo, KillerEffectSpec,
+                UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(Killer));
+        }
 
-		float ExperiencePerTarget = TotalExperienceReward / RewardTargets.Num();
-		float GoldPerTarget = TotalGoldReward / RewardTargets.Num();
+        TotalExperienceReward -= KillerExperienceReward;
+        TotalGoldReward -= KillerGoldReward;
+    }
 
-		FGameplayEffectSpecHandle EffectSpec = MakeOutgoingGameplayEffectSpec(RewardEffect);
-		//EffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetExperienceAttributeTag(), ExperiencePerTarget);
-		//EffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetGoldAttributeTag(), GoldPerTarget);
+    // 7. Chia phần thưởng cho các mục tiêu còn lại
+    if (RewardTargets.Num() > 0)
+    {
+        float ExperiencePerTarget = TotalExperienceReward / RewardTargets.Num();
+        float GoldPerTarget = TotalGoldReward / RewardTargets.Num();
 
-		K2_ApplyGameplayEffectSpecToTarget(EffectSpec, UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActorArray(RewardTargets, true));
-		K2_EndAbility();
-	}
+        FGameplayEffectSpecHandle EffectSpec = MakeOutgoingGameplayEffectSpec(RewardEffect);
+        if (EffectSpec.IsValid())
+        {
+            EffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetExperienceAttributeTag(), ExperiencePerTarget);
+            EffectSpec.Data->SetSetByCallerMagnitude(UCAbilitySystemStatics::GetGoldAttributeTag(), GoldPerTarget);
+
+            ApplyGameplayEffectSpecToTarget(Handle, ActorInfo, ActivationInfo, EffectSpec,
+                UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActorArray(RewardTargets, true));
+        }
+    }
+
+    K2_EndAbility();
 }
 
 TArray<AActor*> UGAP_Dead::GetRewardTargets() const
 {
-	TSet<AActor*> OutActors;
+    TArray<AActor*> ValidTargets;
 
-	AActor* AvatarActor = GetAvatarActorFromActorInfo();
-	if (!AvatarActor || !GetWorld())
-	{
-		return OutActors.Array();
-	}
+    AActor* AvatarActor = GetAvatarActorFromActorInfo();
+    if (!IsValid(AvatarActor) || !GetWorld())
+    {
+        return ValidTargets;
+    }
 
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
-	FCollisionShape CollisionShape;
-	CollisionShape.SetSphere(RewardRange);
+    // Thiết lập tham số cho overlap
+    FCollisionObjectQueryParams ObjectQueryParams;
+    ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
-	TArray<FOverlapResult> OverlapResults;
-	if (GetWorld()->OverlapMultiByObjectType(OverlapResults, AvatarActor->GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape))
-	{
-		for (const FOverlapResult& OverlapResult : OverlapResults)
-		{
-			const IGenericTeamAgentInterface* OtherTeamInterface = Cast<IGenericTeamAgentInterface>(OverlapResult.GetActor());
-			if (!OtherTeamInterface || OtherTeamInterface->GetTeamAttitudeTowards(*AvatarActor) != ETeamAttitude::Hostile)
-			{
-				continue;
-			}
+    FCollisionShape CollisionShape;
+    CollisionShape.SetSphere(RewardRange);
 
-			if (!UCAbilitySystemStatics::IsHero(OverlapResult.GetActor()))
-			{
-				continue;
-			}
+    TArray<FOverlapResult> OverlapResults;
+    GetWorld()->OverlapMultiByObjectType(OverlapResults, AvatarActor->GetActorLocation(),
+        FQuat::Identity, ObjectQueryParams, CollisionShape);
 
-			OutActors.Add(OverlapResult.GetActor());
-		}
-	}
+    // Lọc các mục tiêu hợp lệ
+    for (const FOverlapResult& Result : OverlapResults)
+    {
+        AActor* Target = Result.GetActor();
+        if (!IsValid(Target))
+        {
+            continue;
+        }
 
-	return OutActors.Array();
+        // Kiểm tra team và hero status
+        const IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(Target);
+        if (!TeamInterface || TeamInterface->GetTeamAttitudeTowards(*AvatarActor) != ETeamAttitude::Hostile)
+        {
+            continue;
+        }
+
+        if (UCAbilitySystemStatics::IsHero(Target))
+        {
+            ValidTargets.Add(Target);
+        }
+    }
+
+    return ValidTargets;
 }
