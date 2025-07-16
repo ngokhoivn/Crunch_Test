@@ -40,4 +40,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Reward")
 	TSubclassOf<UGameplayEffect> RewardEffect;
 
+	TArray<AActor*> GetRewardTargets() const;
+
 };
