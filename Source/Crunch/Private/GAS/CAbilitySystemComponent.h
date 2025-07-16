@@ -1,4 +1,4 @@
-﻿//CAbilitySystemComponent.h
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -20,33 +20,23 @@ public:
 	void InitializeBaseAttributes();
 	void ServerSideInit();
 	void ApplyFullStatEffect();
+	//Get the Abilities that is unique for the avatar actor, this do not include Generic/Basic ones
 	const TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
+
 
 private:
 	void ApplyInitialEffects();
 	void GiveInitialAbilities();
-	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int Level = 1);// Áp dụng hiệu ứng gameplay nếu có quyền
-	void HealthUpdated(const FOnAttributeChangeData& ChangeData); // Xử lý khi thuộc tính sức khỏe thay đổi
+	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int Level = 1);
+	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
 	void ManaUpdated(const FOnAttributeChangeData& ChangeData);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
-	TSubclassOf<UGameplayEffect> FullStatEffect;	// Hiệu ứng áp dụng đầy đủ thuộc tính
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
-	TSubclassOf<UGameplayEffect> DeathEffect;	//  Áp dụng hiệu ứng khi chết
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
-	TArray<TSubclassOf<class UGameplayEffect>> InitialEffects;
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability")
+	TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>> Abilities;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability")
-	TMap<ECAbilityInputID, TSubclassOf<class UGameplayAbility>> Abilities;
+	TMap<ECAbilityInputID, TSubclassOf<UGameplayAbility>> BasicAbilities;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability")
-	TMap<ECAbilityInputID, TSubclassOf<class UGameplayAbility>> BasicAbilities;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability")
-	TArray<TSubclassOf<UGameplayAbility>> PassiveAbilities;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Base Stats")
-	UDataTable* BaseStatDataTable;
+	class UPA_AbilitySystemGenerics* AbilitySystemGenerics;
 };
