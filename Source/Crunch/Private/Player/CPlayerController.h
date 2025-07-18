@@ -15,6 +15,7 @@ class ACPlayerController : public APlayerController, public IGenericTeamAgentInt
 {
 	GENERATED_BODY()
 public:
+	void PlayLocalCameraShake(TSubclassOf<UCameraShakeBase> InShake, float Scale = 1.0f);
 	// chỉ gọi trên máy chủ, khi người chơi điều khiển một Pawn mới
 	void OnPossess(APawn* NewPawn) override;
 	// chỉ gọi trên client, khi người chơi điều khiển một Pawn mới
@@ -33,6 +34,10 @@ private:
 
 	UPROPERTY()
 	class ACPlayerCharacter* CPlayerCharacter;
+
+	UPROPERTY()
+	TArray<UCameraShakeBase*> ActiveShakeInstances;
+
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UGameplayWidget> GameplayWidgetClass;

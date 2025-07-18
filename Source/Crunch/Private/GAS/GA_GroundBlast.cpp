@@ -11,6 +11,7 @@
 #include "GameplayTagsManager.h"
 #include "AbilitySystemGlobals.h"
 #include "GameplayCueManager.h"
+#include "TimerManager.h"
 
 UGA_GroundBlast::UGA_GroundBlast()
 {
@@ -26,10 +27,10 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 	}
 
 	UAbilityTask_PlayMontageAndWait* PlayGroundBlastAnimTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, GroundBlastMontage);
-	PlayGroundBlastAnimTask->OnBlendOut.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
-	PlayGroundBlastAnimTask->OnCancelled.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
-	PlayGroundBlastAnimTask->OnInterrupted.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
-	PlayGroundBlastAnimTask->OnCompleted.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
+	//PlayGroundBlastAnimTask->OnBlendOut.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
+	//PlayGroundBlastAnimTask->OnCancelled.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
+	//PlayGroundBlastAnimTask->OnInterrupted.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
+	//PlayGroundBlastAnimTask->OnCompleted.AddDynamic(this, &UGA_GroundBlast::K2_EndAbility);
 	PlayGroundBlastAnimTask->ReadyForActivation();
 
 	UAbilityTask_WaitTargetData* WaitTargetDataTask = UAbilityTask_WaitTargetData::WaitTargetData(this, NAME_None, EGameplayTargetingConfirmation::UserConfirmed, TargetActorClass);
@@ -50,39 +51,69 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 	WaitTargetDataTask->FinishSpawningActor(this, TargetActor);
 }
 
-void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetDataHandle)
+void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetData)
 {
 	if (HasAuthority(&CurrentActivationInfo) && K2_CommitAbility())
 	{
-		BP_ApplyGameplayEffectToTarget(TargetDataHandle, DamageEffectDef.DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
-
-		FVector PushForce = FVector(0.0f, 0.0f, 300.0f);
-		PushTargets(TargetDataHandle, PushForce, 0.5f);
-
-		if (TargetDataHandle.Num() > 0)
+		// 1. Gửi GameplayCue để vẽ đường đạn (trail)
+		FGameplayCueParameters CueParams;
+		// Lấy vị trí socket tay của nhân vật, hoặc một vị trí phù hợp để bắt đầu đường đạn
+		if (ACharacter* MyCharacter = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 		{
-			FGameplayCueParameters BlastingParams;
-			const FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 0);
-			if (HitResult.IsValidBlockingHit())
-			{
-				BlastingParams.Location = HitResult.ImpactPoint;
-				BlastingParams.Normal = HitResult.ImpactNormal;
-				BlastingParams.RawMagnitude = TargetAreaRadius;
-
-				FGameplayEffectContextHandle ContextHandle = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
-				ContextHandle.AddHitResult(HitResult);
-				BlastingParams.EffectContext = ContextHandle;
-				
-				if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
-				{
-					static FGameplayTag ExplosionCueTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.GroundBlast.Explosion"));
-					ASC->ExecuteGameplayCue(ExplosionCueTag, BlastingParams);
-				}
-			}
+			CueParams.Location = MyCharacter->GetMesh()->GetSocketLocation(FName("lowerarm_r")); 
 		}
-	}
+		CueParams.TargetAttachComponent = nullptr;
 
-	K2_EndAbility();
+		// Dùng GameplayCue với Niagara trail (bạn cần tạo tag này trong Project Settings)
+		static FGameplayTag TrailCueTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.GroundBlast.Trail"));
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			ASC->ExecuteGameplayCue(TrailCueTag, CueParams);
+		}
+
+		// 2. Delay nhỏ rồi spawn explosion + gây damage
+		FTimerHandle TimerHandle;
+		FTimerDelegate TimerDelegate;
+
+		TimerDelegate.BindLambda([this, TargetData]()
+			{
+				if (TargetData.Num() > 0)
+				{
+					// 2.1 Explosion Cue
+					FGameplayCueParameters ExplosionParams;
+					const FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetData, 0);
+					if (HitResult.IsValidBlockingHit())
+					{
+						ExplosionParams.Location = HitResult.ImpactPoint;
+						ExplosionParams.Normal = HitResult.ImpactNormal;
+						ExplosionParams.RawMagnitude = TargetAreaRadius;
+
+						FGameplayEffectContextHandle ContextHandle = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
+						ContextHandle.AddHitResult(HitResult);
+						ExplosionParams.EffectContext = ContextHandle;
+
+						if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+						{
+							static FGameplayTag ExplosionCueTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.GroundBlast.Explosion"));
+							ASC->ExecuteGameplayCue(ExplosionCueTag, ExplosionParams);
+						}
+					}
+
+					// 2.2 Gây Damage và Đẩy lùi
+					BP_ApplyGameplayEffectToTarget(TargetData, DamageEffectDef.DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
+					FVector PushForce = FVector(0.0f, 0.0f, 300.0f);
+					PushTargets(TargetData, PushForce, 0.5f);
+				}
+
+				K2_EndAbility();
+			});
+
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, 0.3f, false); // delay 0.3s cho trail bay
+	}
+	else
+	{
+		K2_EndAbility();
+	}
 }
 
 void UGA_GroundBlast::TargetCanceled(const FGameplayAbilityTargetDataHandle& TargetDataHandle)

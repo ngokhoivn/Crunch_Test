@@ -8,7 +8,7 @@ public class Crunch : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",  });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
 			"EnhancedInput", 
@@ -19,6 +19,7 @@ public class Crunch : ModuleRules
 			"Slate",
             "SlateCore",
             "AIModule",
+            
             });
 
 		// Uncomment if you are using Slate UI
