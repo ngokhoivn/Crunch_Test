@@ -171,13 +171,16 @@ FVector ACPlayerCharacter::GetMoveFwdDir() const
 
 void ACPlayerCharacter::OnAimStateChanged(bool bIsAimming)
 {
-	LerpCameraTolocalOffsetLocation(bIsAimming ? CameraAimLocalOffset : FVector(0.f));
+	if (IsLocallyControlledByPlayer())
+	{
+		LerpCameraTolocalOffsetLocation(bIsAimming ? CameraAimLocalOffset : FVector(0.f));
+	}
 }
 
 void ACPlayerCharacter::LerpCameraTolocalOffsetLocation(const FVector& Goal)
 {
 	GetWorldTimerManager().ClearTimer(CameraLerpTimerHandle);
-	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ACPlayerCharacter::TickCameraLocalOffsetLerp, Goal));
+	CameraLerpTimerHandle = GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ACPlayerCharacter::TickCameraLocalOffsetLerp, Goal));
 }
 
 void ACPlayerCharacter::TickCameraLocalOffsetLerp(FVector Goal)
@@ -193,5 +196,5 @@ void ACPlayerCharacter::TickCameraLocalOffsetLerp(FVector Goal)
 	FVector NewLocalOffset = FMath::Lerp(CurrentLocalOffset, Goal, LerpAlpha);
 	ViewCam->SetRelativeLocation(NewLocalOffset);
 
-	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ACPlayerCharacter::TickCameraLocalOffsetLerp, Goal));
+	CameraLerpTimerHandle = GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ACPlayerCharacter::TickCameraLocalOffsetLerp, Goal));
 }
