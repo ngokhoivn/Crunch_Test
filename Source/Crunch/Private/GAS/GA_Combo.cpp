@@ -131,29 +131,15 @@ void UGA_Combo::ComboChangedEventReceived(FGameplayEventData Data)
 
 void UGA_Combo::DoDamage(FGameplayEventData Data)
 {
-	// Dọn timer cũ
-	GetWorld()->GetTimerManager().ClearTimer(DamageProcessingTimer);
-	PendingHitResults.Empty();
-	CurrentDamageIndex = 0;
+	int HitResultCount = UAbilitySystemBlueprintLibrary::GetDataCountFromTargetData(Data.TargetData);
 
-	// Lưu các mục tiêu
-	PendingHitResults = GetHitResultsFromSweepLocationTargetData(Data.TargetData, TargetSweepShereRadius);
-	CurrentDamageEffect = GetDamageEffectForCurrentCombo();
-
-	if (PendingHitResults.Num() > 0 && CurrentDamageEffect)
+	for (int i = 0; i < HitResultCount; i++)
 	{
-		// Gây damage từng mục tiêu một sau mỗi 0.05 giây
-		GetWorld()->GetTimerManager().SetTimer(
-			DamageProcessingTimer,
-			this,
-			&UGA_Combo::ProcessNextDamageTarget,
-			0.05f,
-			true,
-			0.0f
-		);
+		FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(Data.TargetData, i);
+		TSubclassOf<UGameplayEffect> GameplayEffect = GetDamageEffectForCurrentCombo();
+		ApplyGameplayEffectToHitResultActor(HitResult, GameplayEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 	}
 }
-
 
 void UGA_Combo::ProcessNextDamageTarget()
 {

@@ -62,22 +62,16 @@ const FGenericDamageEffectDef* UUpperCut::GetDamageEffectDefForCurrentCombo() co
 
 void UUpperCut::StartLaunching(FGameplayEventData EventData)
 {
-        
     if (K2_HasAuthority())
     {
-        TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(
-            EventData.TargetData,
-            TargetSweepSphereRadius,
-            ETeamAttitude::Hostile,
-            ShouldDrawDebug());
-
-    
         PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperCutLaunchSpeed);
-        for (const FHitResult& HitResult : TargetHitResults)
+        int HitResultCount = UAbilitySystemBlueprintLibrary::GetDataCountFromTargetData(EventData.TargetData);
+
+        for (int i = 0; i < HitResultCount; i++)
         {
+            FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(EventData.TargetData, i);
             PushTarget(HitResult.GetActor(), FVector::UpVector * UpperCutLaunchSpeed);
             ApplyGameplayEffectToHitResultActor(HitResult, LaunchDamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
-
         }
     }
 
@@ -100,14 +94,12 @@ void UUpperCut::HandleComboChangeEvent(FGameplayEventData EventData)
     if (EventTag == UGA_Combo::GetComboChangedEventEndTag())
     {
         NextComboName = NAME_None;
-        UE_LOG(LogTemp, Warning, TEXT("Next Combo is : %s"), *NextComboName.ToString());
         return;
     }
 
     TArray<FName> TagNames;
     UGameplayTagsManager::Get().SplitGameplayTagFName(EventTag, TagNames);
     NextComboName = TagNames.Last();
-    UE_LOG(LogTemp, Warning, TEXT("Next Combo is : %s"), *NextComboName.ToString());
 }
 
 void UUpperCut::HandleComboCommitEvent(FGameplayEventData EventData)
@@ -130,15 +122,17 @@ void UUpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 {
     if (K2_HasAuthority())
     {
-        TArray<FHitResult> TargetHitResults = GetHitResultsFromSweepLocationTargetData(EventData.TargetData, TargetSweepSphereRadius, ETeamAttitude::Hostile, ShouldDrawDebug());
         PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperComboHoldSpeed);
         const FGenericDamageEffectDef* EffectDef = GetDamageEffectDefForCurrentCombo();
         if (!EffectDef)
         {
             return;
         }
-        for (FHitResult& HitResult : TargetHitResults)
+
+        int HitResultCount = UAbilitySystemBlueprintLibrary::GetDataCountFromTargetData(EventData.TargetData);
+        for (int i = 0; i < HitResultCount; i++)
         {
+            FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(EventData.TargetData, i);
             FVector PushVel = GetAvatarActorFromActorInfo()->GetActorTransform().TransformVector(EffectDef->PushVelocity);
             PushTarget(HitResult.GetActor(), PushVel);
             ApplyGameplayEffectToHitResultActor(HitResult, EffectDef->DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));

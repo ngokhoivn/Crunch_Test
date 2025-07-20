@@ -50,10 +50,12 @@ void UAN_SendTargetGroup::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
 
 			if (OwnerTeamInterface)
 			{
-				if (OwnerTeamInterface->GetTeamAttitudeTowards(*HitResult.GetActor()) != TargetTeam)) continue;
+				if (OwnerTeamInterface->GetTeamAttitudeTowards(*HitResult.GetActor()) != TargetTeam) continue;
 			}
 
 			FGameplayAbilityTargetData_SingleTargetHit* TargetHit = new FGameplayAbilityTargetData_SingleTargetHit(HitResult);
+			Data.TargetData.Add(TargetHit);
+			SendLocalGameplayCue(HitResult);
 		}
 	}
 
