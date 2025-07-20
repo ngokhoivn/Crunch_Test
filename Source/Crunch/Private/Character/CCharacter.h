@@ -45,9 +45,12 @@ public:
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
 
+protected:
+	void UpgradeAbilityWithInputID(ECAbilityInputID InputID);
 
 private:
 	void DeathTagUpdated(const FGameplayTag Tag, int32 NewCount); // Xử lý khi thẻ Dead thay đổi

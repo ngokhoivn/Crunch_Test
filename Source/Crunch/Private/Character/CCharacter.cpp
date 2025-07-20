@@ -112,6 +112,14 @@ void ACCharacter::Server_SendGameplayEventToSelf_Implementation(const FGameplayT
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, EventData);
 }
 
+void ACCharacter::UpgradeAbilityWithInputID(ECAbilityInputID InputID)
+{
+	if (CAbilitySystemComponent)
+	{
+		CAbilitySystemComponent->Server_UpgradeAbilityWithID(InputID);
+	}
+}
+
 void ACCharacter::DeathTagUpdated(const FGameplayTag Tag, int32 NewCount)
 {
 	if (NewCount != 0)
