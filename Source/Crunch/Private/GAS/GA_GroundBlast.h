@@ -1,4 +1,4 @@
-//GAGroundBlast.h
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 #include "GA_GroundBlast.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class UGA_GroundBlast : public UCGameplayAbility
@@ -18,20 +18,23 @@ public:
 	UGA_GroundBlast();
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Cue")
+	FGameplayTag BlastGameplayCueTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	float TargetAreaRadius = 300.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	FGenericDamageEffectDef DamageEffectDef;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
-	float TargetAreaRadius = 300.f;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
-	float TargetTraceRange = 200.f;
+	float TargetTraceRange = 2000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	TSubclassOf<class ATargetActor_GroundPick> TargetActorClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	UAnimMontage* GroundBlastMontage;
+	UAnimMontage* TargettingMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	UAnimMontage* CastMontage;
@@ -41,7 +44,4 @@ private:
 
 	UFUNCTION()
 	void TargetCanceled(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
-
-
-
 };

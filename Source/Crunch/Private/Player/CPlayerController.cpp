@@ -6,25 +6,6 @@
 #include "Net/UnrealNetwork.h"
 #include "Camera/CameraShakeBase.h"
 
-void ACPlayerController::PlayLocalCameraShake(TSubclassOf<UCameraShakeBase> InShake, float Scale)
-{
-	if (!IsLocalPlayerController() || !PlayerCameraManager) return;
-
-	// Giới hạn shake đang chạy
-	if (ActiveShakeInstances.Num() >= 3)
-	{
-		PlayerCameraManager->StopCameraShake(ActiveShakeInstances[0]);
-		ActiveShakeInstances.RemoveAt(0);
-	}
-
-	// Gọi shake và lưu handle
-	if (UCameraShakeBase* ShakeInstance = PlayerCameraManager->StartCameraShake(InShake, Scale))
-	{
-		ActiveShakeInstances.Add(ShakeInstance);
-	}
-}
-
-
 void ACPlayerController::OnPossess(APawn* NewPawn)
 {
 	Super::OnPossess(NewPawn);
