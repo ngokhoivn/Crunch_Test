@@ -15,5 +15,6 @@ void UShopItemWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 		return;
 	}
 	SetIcon(ShopItem->GetIcon());
+	SetToolTipWidget(ShopItem);
 }
 
