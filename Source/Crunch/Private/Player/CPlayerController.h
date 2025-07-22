@@ -28,6 +28,8 @@ public:
 
 	// Đăng ký replication
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void SetupInputComponent();
+
 private:
 	void SpawnGameplayWidget();
 
@@ -46,4 +48,13 @@ private:
 
 	UPROPERTY(Replicated)
 	FGenericTeamId TeamID;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	class UInputMappingContext* UInputMapping;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	class UInputAction* ShopToggleInputAction;
+
+	UFUNCTION()
+	void ToggleShop();
 };
