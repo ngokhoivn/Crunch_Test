@@ -12,6 +12,7 @@
 #include "EnhancedInputComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Inventory/InventoryComponent.h"
 
 ACPlayerCharacter::ACPlayerCharacter()
 {
@@ -28,6 +29,7 @@ ACPlayerCharacter::ACPlayerCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0, 720.f, 0.f);
 
 	HeroAttributeSet = CreateDefaultSubobject<UCHeroAttributeSet>(" Hero Attribute Set");
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("Inventory Component");
 }
 
 void ACPlayerCharacter::PawnClientRestart()
