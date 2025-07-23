@@ -60,6 +60,7 @@ void UInventoryComponent::GrantItem(const UPA_ShopItem* NewItem)
 		*(InventoryItem->GetShopItem()->GetItemName().ToString()),
 		NewHandle.GetHandleId());
 	Client_ItemAdded(NewHandle, NewItem);
+	InventoryItem->ApplyGASModifications(OwnerAbilitySystemComponent);
 }
 
 void UInventoryComponent::Client_ItemAdded_Implementation(FInventoryItemHandle AssignedHandle, const UPA_ShopItem* Item)
