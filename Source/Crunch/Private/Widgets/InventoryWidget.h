@@ -18,7 +18,6 @@ class UInventoryWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 private:
-
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* ItemList;
 

@@ -95,6 +95,6 @@ void UGameplayWidget::SetFocusToGameAndUI()
 
 void UGameplayWidget::SetFocusToGameOnly()
 {
-	FInputModeGameAndUI GameOnlyInputMode;
+	FInputModeGameOnly GameOnlyInputMode;
 	GetOwningPlayer()->SetInputMode(GameOnlyInputMode);
 }
