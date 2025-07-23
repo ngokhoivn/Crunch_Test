@@ -6,6 +6,7 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Inventory/InventoryComponent.h"
 #include "Widgets/InventoryItemWidget.h"
+#include "Widgets/InventoryContextMenuWidget.h"
 #include "Components/WrapBox.h"
 #include "Components/WrapBoxSlot.h"
 
@@ -37,11 +38,53 @@ void UInventoryWidget::NativeConstruct()
 
 					NewEmptyWidget->OnInventoryItemDropped.AddUObject(this, &UInventoryWidget::HandleItemDragDrop);
 					NewEmptyWidget->OnLeftBttonClicked.AddUObject(InventoryComponent, &UInventoryComponent::TryActivateItem);
+					NewEmptyWidget->OnRightBttonClicked.AddUObject(this, &UInventoryWidget::ToggleContextMenu);
 				}
 			}
+			SpawnContextMenu();
 		}
 	}
 }
+
+void UInventoryWidget::SpawnContextMenu()
+{
+	if (!ContextMenuWidgetClass)
+		return;
+
+	ContextMenuWidget = CreateWidget<UInventoryContextMenuWidget>(this, ContextMenuWidgetClass);
+	if (ContextMenuWidget)
+	{
+		ContextMenuWidget->GetSellButtonClickedEvent().AddDynamic(this, &UInventoryWidget::SellFocusedItem);
+		ContextMenuWidget->GetUseButtonClickedEvent().AddDynamic(this, &UInventoryWidget::UseFocusedItem);
+		ContextMenuWidget->AddToViewport(1);
+		SetContextMenuVisible(false);
+	}
+}
+
+void UInventoryWidget::SellFocusedItem()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Selling"));
+}
+
+void UInventoryWidget::UseFocusedItem()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Using"));
+}
+
+void UInventoryWidget::SetContextMenuVisible(bool bContextMenuVisible)
+{
+	if (ContextMenuWidget)
+	{
+		ContextMenuWidget->SetVisibility(bContextMenuVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+}
+
+void UInventoryWidget::ToggleContextMenu(const FInventoryItemHandle& ItemHandle)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Trying to toggle context menu"));
+
+}
+
 
 void UInventoryWidget::ItemAdded(const UInventoryItem* InventoryItem)
 {
