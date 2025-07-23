@@ -72,4 +72,13 @@ void UInventoryItemWidget::UpdateStackCount()
 	}
 }
 
+UTexture2D* UInventoryItemWidget::GetIconTexture() const
+{
+	if (InventoryItem && InventoryItem->GetShopItem())
+	{
+		return InventoryItem->GetShopItem()->GetIcon();
+	}
+	return nullptr;
+}
+
 
