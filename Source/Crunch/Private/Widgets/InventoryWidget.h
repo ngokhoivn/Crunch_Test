@@ -35,4 +35,6 @@ private:
 
 	UInventoryItemWidget* GetNextAvaliableSlot() const;
 
+	void HandleItemDragDrop(UInventoryItemWidget* DestinationWidget, UInventoryItemWidget* SourceWidget);
+
 };

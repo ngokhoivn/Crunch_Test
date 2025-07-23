@@ -84,7 +84,7 @@ UTexture2D* UInventoryItemWidget::GetIconTexture() const
 
 FInventoryItemHandle UInventoryItemWidget::GetItemHandle() const
 {
-	if (IsEmpty())
+	if (!IsEmpty())
 	{
 		return InventoryItem->GetHandle();
 	}
