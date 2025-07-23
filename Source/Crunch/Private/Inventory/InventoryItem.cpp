@@ -73,7 +73,7 @@ bool UInventoryItem::ReduceStackCount()
 
 bool UInventoryItem::SetStackCount(int NewStackCount)
 {
-    if (NewStackCount > 0 && NewStackCount < +GetShopItem()->GetMaxStackCount())
+    if (NewStackCount > 0 && NewStackCount <= +GetShopItem()->GetMaxStackCount())
     {
         StackCount = NewStackCount;
         return true;

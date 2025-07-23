@@ -63,6 +63,7 @@ void UInventoryItemWidget::EmptySlot()
 	CooldownDurationText->SetVisibility(ESlateVisibility::Hidden);
 }
 
+
 void UInventoryItemWidget::UpdateStackCount()
 {
 	if (InventoryItem)
