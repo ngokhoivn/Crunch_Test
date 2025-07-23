@@ -3,10 +3,11 @@
 
 #include "Inventory/InventoryItem.h"
 #include "AbilitySystemComponent.h"
-#include "Inventory/PA_ShopItem.h"
-#include "GameplayEffect.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "GameplayEffect.h"
 #include "GAS/CAbilitySystemStatics.h"
+#include "GAS/CAttributeSet.h"
+#include "Inventory/PA_ShopItem.h"
 
 FInventoryItemHandle::FInventoryItemHandle()
     : HandleId{ GetInvalidId() }
@@ -106,6 +107,45 @@ void UInventoryItem::InitItem(const FInventoryItemHandle& NewHandle, const UPA_S
 {
     Handle = NewHandle;
     ShopItem = NewShopItem;
+}
+
+bool UInventoryItem::TryActivateGrantedAbility(UAbilitySystemComponent* AbilitySystemComponent)
+{
+    if (!GrantedAbilitySpecHandle.IsValid())
+        return false;
+
+    if (AbilitySystemComponent && AbilitySystemComponent->TryActivateAbility(GrantedAbilitySpecHandle))
+        return true;
+
+    return false;
+}
+
+void UInventoryItem::ApplyConsumeEffect(UAbilitySystemComponent* AbilitySystemComponent)
+{
+    if (!ShopItem)
+        return;
+
+    TSubclassOf<UGameplayEffect> ConsumeEffect = ShopItem->GetConsumeEffect();
+    if (!ConsumeEffect)
+        return;
+
+    AbilitySystemComponent->BP_ApplyGameplayEffectToSelf(ConsumeEffect, 1, AbilitySystemComponent->MakeEffectContext());
+}
+
+void UInventoryItem::RemoveGASModifications(UAbilitySystemComponent* AbilitySystemComponent)
+{
+    if (!AbilitySystemComponent)
+        return;
+
+    AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UCAttributeSet::GetManaAttribute()).RemoveAll(this);
+    if (AbilitySystemComponent->GetOwner()->HasAuthority())
+    {
+        if (AppliedEquipedEffectHandle.IsValid())
+            AbilitySystemComponent->RemoveActiveGameplayEffect(AppliedEquipedEffectHandle);
+
+        if (GrantedAbilitySpecHandle.IsValid())
+            AbilitySystemComponent->SetRemoveAbilityOnEnd(GrantedAbilitySpecHandle);
+    }
 }
 
 void UInventoryItem::ApplyGASModifications(UAbilitySystemComponent* AbilitySystemComponent)
