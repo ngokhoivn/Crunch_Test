@@ -72,12 +72,14 @@ void UInventoryWidget::SpawnContextMenu()
 
 void UInventoryWidget::SellFocusedItem()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Selling"));
+	InventoryComponent->SellItem(CurrentFocusedItemHandle);
+	SetContextMenuVisible(false);
 }
 
 void UInventoryWidget::UseFocusedItem()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Using"));
+	InventoryComponent->TryActivateItem(CurrentFocusedItemHandle);
+	SetContextMenuVisible(false);
 }
 
 void UInventoryWidget::SetContextMenuVisible(bool bContextMenuVisible)
