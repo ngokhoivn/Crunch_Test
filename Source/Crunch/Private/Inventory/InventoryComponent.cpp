@@ -89,6 +89,47 @@ bool UInventoryComponent::IsAllSlotOccupied() const
 	return InventoryMap.Num() >= GetCapacity();
 }
 
+bool UInventoryComponent::FindIngredientForItem(const UPA_ShopItem* Item, TArray<UInventoryItem*>& OutIngredients, const TArray<const UPA_ShopItem*>& IngredientToIgnore)
+{
+	const FItemCollection* Ingredients = UCAssetManager::Get().GetIngredientForItem(Item);
+	if (!Ingredients)
+		return false;
+
+	bool bAllFound = true;
+	for (const UPA_ShopItem* Ingredient : Ingredients->GetItems())
+	{
+		if (IngredientToIgnore.Contains(Ingredient))
+			continue;
+
+		UInventoryItem* FoundItem = TryGetItemForShopItem(Ingredient);
+		if (!FoundItem)
+		{
+			bAllFound = false;
+			break;
+		}
+
+		OutIngredients.Add(FoundItem);
+	}
+
+	return bAllFound;
+}
+
+UInventoryItem* UInventoryComponent::TryGetItemForShopItem(const UPA_ShopItem* Item) const
+{
+	if (!Item)
+		return nullptr;
+
+	for (const TPair<FInventoryItemHandle, UInventoryItem*>& ItemHandlePair : InventoryMap)
+	{
+		if (ItemHandlePair.Value && ItemHandlePair.Value->GetShopItem() == Item)
+		{
+			return ItemHandlePair.Value;
+		}
+	}
+
+	return nullptr;
+}
+
 UInventoryItem* UInventoryComponent::GetAvailableStackForItem(const UPA_ShopItem* Item) const
 {
 	if (!Item->GetIsStackable()) return nullptr;
@@ -197,6 +238,32 @@ void UInventoryComponent::RemoveItem(UInventoryItem* Item)
 	OnItemRemoved.Broadcast(Item->GetHandle());
 	InventoryMap.Remove(Item->GetHandle());
 	Client_ItemRemoved(Item->GetHandle());
+}
+
+bool UInventoryComponent::TryItemCombination(const UPA_ShopItem* NewItem)
+{
+	if (!GetOwner()->HasAuthority())
+		return false;
+
+	const FItemCollection* CombinationItems = UCAssetManager::Get().GetCombinationForItem(NewItem);
+	if (!CombinationItems)
+		return false;
+
+	for (const UPA_ShopItem* CombinationItem : CombinationItems->GetItems())
+	{
+		TArray<UInventoryItem*> Ingredients;
+		if (!FindIngredientForItem(CombinationItem, Ingredients, TArray<const UPA_ShopItem*>{NewItem}))
+			continue;
+
+		for (UInventoryItem* Ingredient : Ingredients)
+		{
+			RemoveItem(Ingredient);
+		}
+
+		GrantItem(CombinationItem);
+		return true;
+	}
+	return false;
 }
 
 
