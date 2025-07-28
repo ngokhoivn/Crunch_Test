@@ -10,6 +10,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "InventoryItemWidget.h"
 
 void UAbilityGauge::NativeConstruct()
 {
@@ -82,6 +83,7 @@ void UAbilityGauge::StartCooldown(float CooldownTimeRemaining, float CooldownDur
 	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &UAbilityGauge::CooldownFinished, CachedCooldownTimeRemaining);
 	GetWorld()->GetTimerManager().SetTimer(CooldownTimerUpdateHandle, this, &UAbilityGauge::UpdateCooldown, CooldownUpdateInterval, true, 0.f);
 }
+
 
 void UAbilityGauge::CooldownFinished()
 {

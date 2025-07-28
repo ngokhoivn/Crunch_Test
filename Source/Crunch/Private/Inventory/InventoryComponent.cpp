@@ -32,7 +32,7 @@ void UInventoryComponent::TryPurchase(const UPA_ShopItem* ItemToPurchase)
 {
 	if (!OwnerAbilitySystemComponent)
 		return;
-	
+
 	Server_Purchase(ItemToPurchase);
 }
 
@@ -310,16 +310,19 @@ void UInventoryComponent::Server_Purchase_Implementation(const UPA_ShopItem* Ite
 {
 	if (!ItemToPurchase) return;
 	if (GetGold() < ItemToPurchase->GetPrice()) return;
-	if (IsFullFor(ItemToPurchase)) return;
+	if (!IsFullFor(ItemToPurchase))
+	{
+		OwnerAbilitySystemComponent->ApplyModToAttribute(UCHeroAttributeSet::GetGoldAttribute(), EGameplayModOp::Additive, -ItemToPurchase->GetPrice());
+		GrantItem(ItemToPurchase);
+		return;
 
-	OwnerAbilitySystemComponent->ApplyModToAttribute(UCHeroAttributeSet::GetGoldAttribute(), EGameplayModOp::Additive, -ItemToPurchase->GetPrice());
-	GrantItem(ItemToPurchase);
+	}
+
 }
 
 bool UInventoryComponent::Server_Purchase_Validate(const UPA_ShopItem* ItemToPurchase)
 {
 	return true;
 }
-
 
 
