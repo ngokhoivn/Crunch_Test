@@ -130,6 +130,18 @@ UInventoryItem* UInventoryComponent::TryGetItemForShopItem(const UPA_ShopItem* I
 	return nullptr;
 }
 
+void UInventoryComponent::TryActivateItemInSlot(int SlotNumber)
+{
+	for (TPair<FInventoryItemHandle, UInventoryItem*>& ItemPair : InventoryMap)
+	{
+		if (ItemPair.Value->GetItemSlot() == SlotNumber)
+		{
+			Server_ActivateItem(ItemPair.Key);
+			return;
+		}
+	}
+}
+
 UInventoryItem* UInventoryComponent::GetAvailableStackForItem(const UPA_ShopItem* Item) const
 {
 	if (!Item->GetIsStackable()) return nullptr;
