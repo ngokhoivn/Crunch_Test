@@ -126,9 +126,9 @@ void UInventoryItem::InitItem(const FInventoryItemHandle& NewHandle, const UPA_S
     ShopItem = NewShopItem;
 
     OwnerAbilitySystemComponent = AbilitySystemComponent;
-    /*if (OwnerAbilitySystemComponent)
+    if (OwnerAbilitySystemComponent)
         OwnerAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UCAttributeSet::GetManaAttribute()).AddUObject(this, &UInventoryItem::ManaUpdated);
-    ApplyGASModifications();*/
+    ApplyGASModifications();
 }
 
 bool UInventoryItem::TryActivateGrantedAbility()
@@ -199,6 +199,11 @@ void UInventoryItem::ApplyGASModifications()
             GrantedAbilitySpecHandle = OwnerAbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(GrantedAbility));
         }
     }
+}
+
+void UInventoryItem::ManaUpdated(const FOnAttributeChangeData& ChangeData)
+{
+    OnAbilityCanCastUpdated.Broadcast(CanCastAbility());
 }
 
 void UInventoryItem::SetSlot(int NewSlot)
