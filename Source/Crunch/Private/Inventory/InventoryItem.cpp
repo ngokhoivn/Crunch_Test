@@ -230,3 +230,17 @@ float UInventoryItem::GetAbilityManaCost() const
     return UCAbilitySystemStatics::GetManaCostFor(GetShopItem()->GetGrantedAbilityCDO(), *OwnerAbilitySystemComponent, 1);
 }
 
+bool UInventoryItem::CanCastAbility() const
+{
+    if (!IsGrantingAnyAbility() || !OwnerAbilitySystemComponent)
+        return false;
+
+    FGameplayAbilitySpec* Spec = OwnerAbilitySystemComponent->FindAbilitySpecFromHandle(GrantedAbilitySpecHandle);
+    if (Spec)
+    {
+        return UCAbilitySystemStatics::CheckAbilityCost(*Spec, *OwnerAbilitySystemComponent);
+    }
+
+    return UCAbilitySystemStatics::CheckAbilityCostStatic(GetShopItem()->GetGrantedAbilityCDO(), *OwnerAbilitySystemComponent);
+}
+
