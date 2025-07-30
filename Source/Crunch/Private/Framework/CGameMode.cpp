@@ -3,6 +3,8 @@
 #include "Framework/CGameMode.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
+#include "Player/CPlayerController.h"
+#include "Framework/StormCore.h"
 
 APlayerController* ACGameMode::SpawnPlayerController(ENetRole InRemoteRole, const FString& Options)
 {
@@ -24,6 +26,16 @@ APlayerController* ACGameMode::SpawnPlayerController(ENetRole InRemoteRole, cons
 
 	NewPlayerController->StartSpot = FindNextStartSpotForTeam(TeamID); // tìm vị trí bắt đầu cho người chơi
 	return NewPlayerController;
+}
+
+void ACGameMode::StartPlay()
+{
+	Super::StartPlay();
+	AStormCore* StormCore = GetStormCore();
+	if (StormCore)
+	{
+		StormCore->OnGoalReachedDelegate.AddUObject(this, &ACGameMode::MatchFinished);
+	}
 }
 
 FGenericTeamId ACGameMode::GetTeamIDForPlayer(const APlayerController* PlayerController) const
@@ -55,4 +67,30 @@ AActor* ACGameMode::FindNextStartSpotForTeam(const FGenericTeamId& TeamID) const
 		}
 	}
 	return nullptr; // nếu không tìm thấy PlayerStart phù hợp, trả về nullptr
+}
+
+AStormCore* ACGameMode::GetStormCore() const
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		for (TActorIterator<AStormCore> It(World); It; ++It)
+		{
+			return *It;
+		}
+	}
+
+	return nullptr;
+}
+
+void ACGameMode::MatchFinished(AActor* ViewTarget, int WiningTeam)
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		for (TActorIterator<ACPlayerController> It(World); It; ++It)
+		{
+			It->MatchFinished(ViewTarget, WiningTeam);
+		}
+	}
 }
