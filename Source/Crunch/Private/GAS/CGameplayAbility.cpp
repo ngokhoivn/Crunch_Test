@@ -177,6 +177,25 @@ void UCGameplayAbility::PushTargets(const FGameplayAbilityTargetDataHandle& Targ
     }
 }
 
+void UCGameplayAbility::PlayMontageLocally(UAnimMontage* MontageToPlay)
+{
+    UAnimInstance* OwnerAnimInst = GetOwnerAnimInstance();
+    if (OwnerAnimInst && !OwnerAnimInst->Montage_IsPlaying(MontageToPlay))
+    {
+        OwnerAnimInst->Montage_Play(MontageToPlay);
+    }
+}
+
+void UCGameplayAbility::StopMontageAfterCurrentSection(UAnimMontage* MontageToStop)
+{
+    UAnimInstance* OwnerAnimInst = GetOwnerAnimInstance();
+    if (OwnerAnimInst)
+    {
+        FName CurrentSectionName = OwnerAnimInst->Montage_GetCurrentSection(MontageToStop);
+        OwnerAnimInst->Montage_SetNextSection(CurrentSectionName, NAME_None, MontageToStop);
+    }
+}
+
 ACharacter* UCGameplayAbility::GetOwningAvatarCharacter()
 {
     if (!AvatarCharacter)

@@ -33,6 +33,9 @@ protected:
 	void PushTarget(AActor* Target, const FVector& PushVel);
 	void PushTargets(const TArray<AActor*>& Targets, const FVector& PushVel);
 	void PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle, const FVector& PushForce, float PushDuration);
+	void PlayMontageLocally(UAnimMontage* MontageToPlay);
+	void StopMontageAfterCurrentSection(UAnimMontage* MontageToStop);
+
 	ACharacter* GetOwningAvatarCharacter();
 
 	UFUNCTION(BlueprintCallable, Category = "GameplayAbility")

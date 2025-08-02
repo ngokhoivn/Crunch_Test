@@ -60,11 +60,29 @@ FGameplayTag UGA_Shoot::GetShootTag()
 void UGA_Shoot::StartShooting(FGameplayEventData Payload)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Start Shooting"));
+	if (HasAuthority(&CurrentActivationInfo))
+	{
+		UAbilityTask_PlayMontageAndWait* PlayShootMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, ShootMontage);
+		PlayShootMontage->ReadyForActivation();
+	}
+	else
+	{
+		PlayMontageLocally(ShootMontage);
+	}
+
+	/*FindAimTarget();
+	StartAimTargetCheckTimer();*/
 }
 
 void UGA_Shoot::StopShooting(FGameplayEventData Payload)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Stop Shooting"));
+	if (ShootMontage)
+	{
+		StopMontageAfterCurrentSection(ShootMontage);
+	}
+
+	//StopAimTargetCheckTimer();
 }
 
 void UGA_Shoot::ShootProjectile(FGameplayEventData Payload)

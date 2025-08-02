@@ -31,6 +31,7 @@ private:
 	UFUNCTION()
 	void ShootProjectile(FGameplayEventData Payload);
 
-
+	UPROPERTY(EditDefaultsOnly, Category = "Anim")
+	UAnimMontage* ShootMontage;
 
 };
