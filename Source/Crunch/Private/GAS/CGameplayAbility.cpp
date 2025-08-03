@@ -292,5 +292,14 @@ void UCGameplayAbility::ApplyGameplayEffectToHitResultActor(const FHitResult& Hi
     );
 }
 
+void UCGameplayAbility::SendLocalGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData)
+{
+    UAbilitySystemComponent* OwnerASC = GetAbilitySystemComponentFromActorInfo();
+    if (OwnerASC)
+    {
+        OwnerASC->HandleGameplayEvent(EventTag, &EventData);
+    }
+}
+
 
 

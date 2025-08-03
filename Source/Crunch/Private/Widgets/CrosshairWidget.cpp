@@ -19,7 +19,7 @@ void UCrosshairWidget::NativeConstruct()
 	if (OwnerAbilitySystemComponent)
 	{
 		OwnerAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetCrosshairTag()).AddUObject(this, &UCrosshairWidget::CrosshairTagUpdated);
-		//OwnerAbilitySystemComponent->GenericGameplayEventCallbacks.Add(UCAbilitySystemStatics::GetTargetUpdatedTag()).AddUObject(this, &UCrosshairWidget::TargetUpdated);
+		OwnerAbilitySystemComponent->GenericGameplayEventCallbacks.Add(UCAbilitySystemStatics::GetTargetUpdatedTag()).AddUObject(this, &UCrosshairWidget::TargetUpdated);
 	}
 	CachedPlayerController = GetOwningPlayer();
 
