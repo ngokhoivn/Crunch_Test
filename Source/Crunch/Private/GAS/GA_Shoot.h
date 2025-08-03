@@ -31,6 +31,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shoot")
 	TSubclassOf<class AProjectileActor> ProjectileClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Shoot")
+	FVector ProjectileSpawnOffset = FVector(0.f, 0.f, 5.f);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Anim")
 	UAnimMontage* ShootMontage;
 

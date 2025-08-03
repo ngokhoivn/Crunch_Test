@@ -69,8 +69,11 @@ void AMinionBarrack::SpawnNewGroup()
 		}
 
 		AMinion* NextAvaliableMinion = GetNextAvaliableMinion();
-		if (!NextAvaliableMinion) break;
-
+		if (!NextAvaliableMinion) 
+		{	
+			SpawnNewMinions(i); // Spawn thêm minions nếu cần thiết
+			break;
+		}
 		NextAvaliableMinion->SetActorTransform(SpawnTransform); // Đặt vị trí spawn cho minion
 		NextAvaliableMinion->Activate(); // Kích hoạt minion nếu nó đã "chết"
 
@@ -78,7 +81,7 @@ void AMinionBarrack::SpawnNewGroup()
 
 	}
 
-	SpawnNewMinions(i); // Spawn thêm minions nếu cần thiết
+	
 }
 
 void AMinionBarrack::SpawnNewMinions(int Amt)

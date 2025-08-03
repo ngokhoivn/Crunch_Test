@@ -1,7 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "GAS/GA_Shoot.h"
+﻿#include "GAS/GA_Shoot.h"
 #include "GAS/CAbilitySystemStatics.h"
 #include "GameplayTagsManager.h"
 #include "GAS/ProjectileActor.h"
@@ -9,6 +6,9 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/Controller.h"
 
 UGA_Shoot::UGA_Shoot()
 {
@@ -24,7 +24,7 @@ void UGA_Shoot::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Shoot Ability Activated"));
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] Ability Activated."));
 
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
@@ -39,17 +39,19 @@ void UGA_Shoot::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 		UAbilityTask_WaitGameplayEvent* WaitShootProjectileEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, GetShootTag(), nullptr, false, false);
 		WaitShootProjectileEvent->EventReceived.AddDynamic(this, &UGA_Shoot::ShootProjectile);
 		WaitShootProjectileEvent->ReadyForActivation();
+		UE_LOG(LogTemp, Log, TEXT("[GA_Shoot] Waiting for 'Ability.Shoot' event."));
 	}
 }
 
 void UGA_Shoot::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Shoot Ability Ended"));
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] Input Released, Ability Ended."));
 	K2_EndAbility();
 }
 
 void UGA_Shoot::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] EndAbility called."));
 	if (AimTargetAbilitySystemComponent)
 	{
 		AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).RemoveAll(this);
@@ -68,7 +70,7 @@ FGameplayTag UGA_Shoot::GetShootTag()
 
 void UGA_Shoot::StartShooting(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Start Shooting"));
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] StartShooting triggered."));
 	if (HasAuthority(&CurrentActivationInfo))
 	{
 		UAbilityTask_PlayMontageAndWait* PlayShootMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, ShootMontage);
@@ -85,7 +87,7 @@ void UGA_Shoot::StartShooting(FGameplayEventData Payload)
 
 void UGA_Shoot::StopShooting(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Stop Shooting"));
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] StopShooting triggered."));
 	if (ShootMontage)
 	{
 		StopMontageAfterCurrentSection(ShootMontage);
@@ -96,34 +98,100 @@ void UGA_Shoot::StopShooting(FGameplayEventData Payload)
 
 void UGA_Shoot::ShootProjectile(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Shoot Projectile"));
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] ShootProjectile event received with tag: %s on %s"), *Payload.EventTag.ToString(), K2_HasAuthority() ? TEXT("Server") : TEXT("Client"));
+
 	if (K2_HasAuthority())
 	{
-		AActor* OwnerAvaterActor = GetAvatarActorFromActorInfo();
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = OwnerAvaterActor;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AActor* OwnerAvatarActor = GetAvatarActorFromActorInfo();
+		if (!OwnerAvatarActor)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[GA_Shoot] OwnerAvatarActor is null."));
+			return;
+		}
 
-		FVector SocketLocation = GetAvatarActorFromActorInfo()->GetActorLocation();
+		// 1. Get Socket Location
+		FVector SocketLocation = OwnerAvatarActor->GetActorLocation();
 		USkeletalMeshComponent* MeshComp = GetOwningComponentFromActorInfo();
 		if (MeshComp)
 		{
 			TArray<FName> OutNames;
 			UGameplayTagsManager::Get().SplitGameplayTagFName(Payload.EventTag, OutNames);
-			if (OutNames.Num() != 0)
+			FName SocketName = OutNames.Num() > 0 ? OutNames.Last() : NAME_None;
+			if (SocketName != NAME_None && MeshComp->DoesSocketExist(SocketName))
 			{
-				FName SocketName = OutNames.Last();
 				SocketLocation = MeshComp->GetSocketLocation(SocketName);
+				SocketLocation += ProjectileSpawnOffset; // 🎯 Dùng offset đã khai báo
 			}
 		}
 
-		AProjectileActor* Projectile = GetWorld()->SpawnActor<AProjectileActor>(ProjectileClass, SocketLocation, OwnerAvaterActor->GetActorRotation(), SpawnParams);
+		// 2. Determine Target Location
+		FVector TargetLocation;
+		AActor* CurrentAimTarget = GetAimTargetIfValid();
+
+		if (CurrentAimTarget)
+		{
+			TargetLocation = CurrentAimTarget->GetActorLocation();
+		}
+		else
+		{
+			APawn* OwnerPawn = Cast<APawn>(OwnerAvatarActor);
+			AController* Controller = OwnerPawn ? OwnerPawn->GetController() : nullptr;
+
+			if (Controller)
+			{
+				FVector CameraLocation;
+				FRotator CameraRotation;
+				Controller->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+				FVector TraceStart = CameraLocation;
+				FVector TraceEnd = TraceStart + (CameraRotation.Vector() * ShootProjectileRange);
+
+				FHitResult HitResult;
+				TArray<AActor*> ActorsToIgnore;
+				ActorsToIgnore.Add(OwnerAvatarActor);
+
+				bool bHit = UKismetSystemLibrary::LineTraceSingle(
+					this,
+					TraceStart,
+					TraceEnd,
+					UEngineTypes::ConvertToTraceType(ECC_Visibility),
+					false,
+					ActorsToIgnore,
+					EDrawDebugTrace::ForDuration,
+					HitResult,
+					false
+				);
+
+				TargetLocation = bHit ? HitResult.Location : TraceEnd;
+			}
+			else
+			{
+				// Fallback if controller is not available (e.g. for AI)
+				TargetLocation = OwnerAvatarActor->GetActorLocation() + (OwnerAvatarActor->GetActorForwardVector() * ShootProjectileRange);
+			}
+		}
+
+		// 3. Calculate rotation from socket to target
+		FRotator ProjectileRotation = (TargetLocation - SocketLocation).Rotation();
+
+		// 4. Spawn Projectile
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = OwnerAvatarActor;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AProjectileActor* Projectile = GetWorld()->SpawnActor<AProjectileActor>(ProjectileClass, SocketLocation, ProjectileRotation, SpawnParams);
 		if (Projectile)
 		{
+			UE_LOG(LogTemp, Log, TEXT("[GA_Shoot] Projectile successfully spawned at %s, targeting %s"), *SocketLocation.ToString(), *TargetLocation.ToString());
 			Projectile->ShootProjectile(ShootProjectileSpeed, ShootProjectileRange, GetAimTargetIfValid(), GetOwnerTeamId(), MakeOutgoingGameplayEffectSpec(ProjectileHitEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[GA_Shoot] Failed to spawn projectile!"));
 		}
 	}
 }
+
 
 AActor* UGA_Shoot::GetAimTargetIfValid() const
 {

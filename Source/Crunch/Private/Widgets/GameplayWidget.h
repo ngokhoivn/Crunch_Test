@@ -19,7 +19,9 @@ public:
     void ConfigureAbilities(const TMap<ECAbilityInputID, TSubclassOf<class UGameplayAbility>>& Abilities);
     void ToggleShop();
 
+    UFUNCTION()
     void ToggleGameplayMenu();
+
     void ShowGameplayMenu();
     void SetGameplayMenuTitle(const FString& NewTitle);
 
