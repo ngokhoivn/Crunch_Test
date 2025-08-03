@@ -182,8 +182,8 @@ bool UGA_Shoot::HasValidTarget() const
 	if (!AimTarget)
 		return false;
 
-	/*if (UCAbilitySystemStatics::IsActorDead(AimTarget))
-		return false;*/
+	if (UCAbilitySystemStatics::IsActorDead(AimTarget))
+		return false;
 
 	if (!IsTargetInRange())
 		return false;
