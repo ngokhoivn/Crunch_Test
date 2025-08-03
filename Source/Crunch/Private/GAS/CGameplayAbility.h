@@ -35,6 +35,7 @@ protected:
 	void PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle, const FVector& PushForce, float PushDuration);
 	void PlayMontageLocally(UAnimMontage* MontageToPlay);
 	void StopMontageAfterCurrentSection(UAnimMontage* MontageToStop);
+	FGenericTeamId GetOwnerTeamId() const;
 
 	ACharacter* GetOwningAvatarCharacter();
 
