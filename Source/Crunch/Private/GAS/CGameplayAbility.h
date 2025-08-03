@@ -19,6 +19,7 @@ public:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 protected:
+	AActor* GetAimTarget(float AimDistance, ETeamAttitude::Type TeamAttitude) const;
 	class UAnimInstance* GetOwnerAnimInstance() const;
 	TArray<FHitResult> GetHitResultsFromSweepLocationTargetData(
 	const FGameplayAbilityTargetDataHandle& TargetDataHandle, // đối tượng mục tiêu
@@ -36,6 +37,8 @@ protected:
 	void PlayMontageLocally(UAnimMontage* MontageToPlay);
 	void StopMontageAfterCurrentSection(UAnimMontage* MontageToStop);
 	FGenericTeamId GetOwnerTeamId() const;
+
+	bool IsActorTeamAttitudeIs(const AActor* OtherActor, ETeamAttitude::Type TeamAttitude) const;
 
 	ACharacter* GetOwningAvatarCharacter();
 

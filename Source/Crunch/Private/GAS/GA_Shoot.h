@@ -31,6 +31,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shoot")
 	TSubclassOf<class AProjectileActor> ProjectileClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Anim")
+	UAnimMontage* ShootMontage;
+
 	static FGameplayTag GetShootTag();
 
 	UFUNCTION()
@@ -42,7 +45,26 @@ private:
 	UFUNCTION()
 	void ShootProjectile(FGameplayEventData Payload);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Anim")
-	UAnimMontage* ShootMontage;
+	AActor* GetAimTargetIfValid() const;
 
+	UPROPERTY()
+	AActor* AimTarget;
+
+	UPROPERTY()
+	UAbilitySystemComponent* AimTargetAbilitySystemComponent;
+
+	FTimerHandle AimTargetCheckTimerHandle;
+
+	void FindAimTarget();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Target")
+	float AimTargetCheckTimeInterval = 0.1f;
+
+	void StartAimTargetCheckTimer();
+	void StopAimTargetCheckTimer();
+
+	bool HasValidTarget() const;
+	bool IsTargetInRange() const;
+
+	void TargetDeadTagUpdated(const FGameplayTag Tag, int32 NewCount);
 };
