@@ -9,10 +9,12 @@
 #include "AbilitySystemInterface.h"
 #include "GenericTeamAgentInterface.h"
 #include "GAS/CGameplayAbilityTypes.h"
+#include "Widgets/RenderActorTargetInterface.h"
 #include "CCharacter.generated.h"
 
+
 UCLASS()
-class ACCharacter : public ACharacter, public IAbilitySystemInterface, public IGenericTeamAgentInterface
+class ACCharacter : public ACharacter, public IAbilitySystemInterface, public IGenericTeamAgentInterface, public IRenderActorTargetInterface
 {
 	GENERATED_BODY()
 
@@ -24,6 +26,15 @@ public:
 	bool IsLocallyControlledByPlayer() const;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	const TMap<ECAbilityInputID, TSubclassOf<class UGameplayAbility>>& GetAbilities();
+	virtual FVector GetCaptureLocalPosition() const override;
+	virtual FRotator GetCaptureLocalRotation() const override;
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Capture")
+	FVector HeadshotCaptureLocalPossition;
+
+	UPROPERTY(EditDefaultsOnly, Category = "capture")
+	FRotator HeadshotCaptureLocalRotation;
 
 protected:
 	// Called when the game starts or when spawned
