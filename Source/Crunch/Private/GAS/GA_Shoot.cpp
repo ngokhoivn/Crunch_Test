@@ -65,7 +65,7 @@ void UGA_Shoot::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGamep
 
 FGameplayTag UGA_Shoot::GetShootTag()
 {
-	return FGameplayTag::RequestGameplayTag("ability.shoot");
+	return FGameplayTag::RequestGameplayTag("Ability.Shoot");
 }
 
 void UGA_Shoot::StartShooting(FGameplayEventData Payload)
