@@ -44,6 +44,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	FName TargetActorAttachSocketName = "Lazer";
 
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	TSubclassOf<class ATargetActor_Line> LazerTargetActorClass;
+
 	UFUNCTION()
 	void ShootLazer(FGameplayEventData Payload);
 	void ManaUpdated(const FOnAttributeChangeData& ChangeData);

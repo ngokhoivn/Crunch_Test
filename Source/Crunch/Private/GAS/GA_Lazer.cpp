@@ -9,6 +9,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "GAS/CAttributeSet.h"
+#include "GAS/TargetActor_Line.h"
 
 void UGA_Lazer::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
@@ -51,7 +52,7 @@ void UGA_Lazer::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGamep
 
 FGameplayTag UGA_Lazer::GetShootTag()
 {
-	return FGameplayTag::RequestGameplayTag("Ability.Lazer.Shoot");
+	return FGameplayTag::RequestGameplayTag("ability.lazer.shoot");
 }
 
 void UGA_Lazer::ShootLazer(FGameplayEventData Payload)
@@ -66,6 +67,22 @@ void UGA_Lazer::ShootLazer(FGameplayEventData Payload)
 		}
 	}
 
+	UAbilityTask_WaitTargetData* WaitDamageTargetTask = UAbilityTask_WaitTargetData::WaitTargetData(this, NAME_None, EGameplayTargetingConfirmation::CustomMulti, LazerTargetActorClass);
+	WaitDamageTargetTask->ValidData.AddDynamic(this, &UGA_Lazer::TargetReceived);
+	WaitDamageTargetTask->ReadyForActivation();
+
+	AGameplayAbilityTargetActor* TargetActor;
+	WaitDamageTargetTask->BeginSpawningActor(this, LazerTargetActorClass, TargetActor);
+	ATargetActor_Line* LineTargetActor = Cast<ATargetActor_Line>(TargetActor);
+	if (LineTargetActor)
+	{
+		LineTargetActor->ConfigureTargetSetting(TargetRange, DetectionCylinderRadius, TargetingInterval, GetOwnerTeamId(), ShouldDrawDebug());
+	}
+
+	WaitDamageTargetTask->FinishSpawningActor(this, TargetActor);
+
+	if (LineTargetActor)
+		LineTargetActor->AttachToComponent(GetOwningComponentFromActorInfo(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TargetActorAttachSocketName);
 }
 
 void UGA_Lazer::ManaUpdated(const FOnAttributeChangeData& ChangeData)
@@ -83,4 +100,5 @@ void UGA_Lazer::TargetReceived(const FGameplayAbilityTargetDataHandle& TargetDat
 	{
 		BP_ApplyGameplayEffectToTarget(TargetDataHandle, HitDamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 	}
+	PushTargets(TargetDataHandle, GetAvatarActorFromActorInfo()->GetActorForwardVector() * HitPushSpeed, 0.1f);
 }
