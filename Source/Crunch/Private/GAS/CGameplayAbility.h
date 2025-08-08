@@ -33,7 +33,7 @@ protected:
 	void PushSelf(const FVector& PushVel);
 	void PushTarget(AActor* Target, const FVector& PushVel);
 	void PushTargets(const TArray<AActor*>& Targets, const FVector& PushVel);
-	void PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle, const FVector& PushForce, float PushDuration);
+	void PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle, const FVector& PushForce);
 	void PlayMontageLocally(UAnimMontage* MontageToPlay);
 	void StopMontageAfterCurrentSection(UAnimMontage* MontageToStop);
 	FGenericTeamId GetOwnerTeamId() const;

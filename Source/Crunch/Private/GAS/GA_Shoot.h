@@ -1,9 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GAS/CGameplayAbility.h"
+#include "CollisionQueryParams.h"
+#include "CollisionShape.h"
 #include "GA_Shoot.generated.h"
 
 /**
@@ -31,9 +33,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shoot")
 	TSubclassOf<class AProjectileActor> ProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Shoot")
-	FVector ProjectileSpawnOffset = FVector(0.f, 0.f, 5.f);
-
 	UPROPERTY(EditDefaultsOnly, Category = "Anim")
 	UAnimMontage* ShootMontage;
 
@@ -56,12 +55,28 @@ private:
 	UPROPERTY()
 	UAbilitySystemComponent* AimTargetAbilitySystemComponent;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
+	FVector ProjectileSpawnOffset;
+
 	FTimerHandle AimTargetCheckTimerHandle;
 
 	void FindAimTarget();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Target")
 	float AimTargetCheckTimeInterval = 0.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Auto Targeting", meta = (AllowPrivateAccess = "true"))
+	float AutoTargetRange = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Auto Targeting", meta = (AllowPrivateAccess = "true"))
+	float AutoTargetAngle = 70.0f; // Degrees
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shoot")
+	float ConeSpreadAngle = 10.0f; // Angle in degrees for the cone spread
+
+	// Helper functions
+	AActor* GetClosestHostileInFront();
+	void GetActorsInRange(const FVector& Center, float Range, TArray<AActor*>& OutActors);
 
 	void StartAimTargetCheckTimer();
 	void StopAimTargetCheckTimer();

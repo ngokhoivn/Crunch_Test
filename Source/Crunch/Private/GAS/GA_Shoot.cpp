@@ -7,8 +7,10 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
+#include "Engine/OverlapResult.h"
 
 UGA_Shoot::UGA_Shoot()
 {
@@ -24,8 +26,6 @@ void UGA_Shoot::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] Ability Activated."));
-
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
 		UAbilityTask_WaitGameplayEvent* WaitStartShootingEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, UCAbilitySystemStatics::GetBasicAttackInputPressedTag());
@@ -39,19 +39,16 @@ void UGA_Shoot::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 		UAbilityTask_WaitGameplayEvent* WaitShootProjectileEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, GetShootTag(), nullptr, false, false);
 		WaitShootProjectileEvent->EventReceived.AddDynamic(this, &UGA_Shoot::ShootProjectile);
 		WaitShootProjectileEvent->ReadyForActivation();
-		UE_LOG(LogTemp, Log, TEXT("[GA_Shoot] Waiting for 'Ability.Shoot' event."));
 	}
 }
 
 void UGA_Shoot::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] Input Released, Ability Ended."));
 	K2_EndAbility();
 }
 
 void UGA_Shoot::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] EndAbility called."));
 	if (AimTargetAbilitySystemComponent)
 	{
 		AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).RemoveAll(this);
@@ -70,7 +67,6 @@ FGameplayTag UGA_Shoot::GetShootTag()
 
 void UGA_Shoot::StartShooting(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] StartShooting triggered."));
 	if (HasAuthority(&CurrentActivationInfo))
 	{
 		UAbilityTask_PlayMontageAndWait* PlayShootMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, ShootMontage);
@@ -87,7 +83,6 @@ void UGA_Shoot::StartShooting(FGameplayEventData Payload)
 
 void UGA_Shoot::StopShooting(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] StopShooting triggered."));
 	if (ShootMontage)
 	{
 		StopMontageAfterCurrentSection(ShootMontage);
@@ -98,18 +93,14 @@ void UGA_Shoot::StopShooting(FGameplayEventData Payload)
 
 void UGA_Shoot::ShootProjectile(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Shoot] ShootProjectile event received with tag: %s on %s"), *Payload.EventTag.ToString(), K2_HasAuthority() ? TEXT("Server") : TEXT("Client"));
-
 	if (K2_HasAuthority())
 	{
 		AActor* OwnerAvatarActor = GetAvatarActorFromActorInfo();
 		if (!OwnerAvatarActor)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[GA_Shoot] OwnerAvatarActor is null."));
 			return;
 		}
 
-		// 1. Get Socket Location
 		FVector SocketLocation = OwnerAvatarActor->GetActorLocation();
 		USkeletalMeshComponent* MeshComp = GetOwningComponentFromActorInfo();
 		if (MeshComp)
@@ -120,17 +111,16 @@ void UGA_Shoot::ShootProjectile(FGameplayEventData Payload)
 			if (SocketName != NAME_None && MeshComp->DoesSocketExist(SocketName))
 			{
 				SocketLocation = MeshComp->GetSocketLocation(SocketName);
-				SocketLocation += ProjectileSpawnOffset; // 🎯 Dùng offset đã khai báo
+				SocketLocation += ProjectileSpawnOffset;
 			}
 		}
 
-		// 2. Determine Target Location
 		FVector TargetLocation;
-		AActor* CurrentAimTarget = GetAimTargetIfValid();
+		AActor* FinalTarget = GetAimTargetIfValid();
 
-		if (CurrentAimTarget)
+		if (FinalTarget)
 		{
-			TargetLocation = CurrentAimTarget->GetActorLocation();
+			TargetLocation = FinalTarget->GetActorLocation();
 		}
 		else
 		{
@@ -150,48 +140,51 @@ void UGA_Shoot::ShootProjectile(FGameplayEventData Payload)
 				TArray<AActor*> ActorsToIgnore;
 				ActorsToIgnore.Add(OwnerAvatarActor);
 
-				bool bHit = UKismetSystemLibrary::LineTraceSingle(
-					this,
-					TraceStart,
-					TraceEnd,
-					UEngineTypes::ConvertToTraceType(ECC_Visibility),
-					false,
-					ActorsToIgnore,
-					EDrawDebugTrace::ForDuration,
-					HitResult,
-					false
-				);
+				UKismetSystemLibrary::LineTraceSingle(this, TraceStart, TraceEnd, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, ActorsToIgnore, EDrawDebugTrace::None, HitResult, true);
 
-				TargetLocation = bHit ? HitResult.Location : TraceEnd;
+				TargetLocation = HitResult.bBlockingHit ? HitResult.Location : TraceEnd;
 			}
 			else
 			{
-				// Fallback if controller is not available (e.g. for AI)
 				TargetLocation = OwnerAvatarActor->GetActorLocation() + (OwnerAvatarActor->GetActorForwardVector() * ShootProjectileRange);
 			}
 		}
 
-		// 3. Calculate rotation from socket to target
-		FRotator ProjectileRotation = (TargetLocation - SocketLocation).Rotation();
+		const FVector CentralDirection = (TargetLocation - SocketLocation).GetSafeNormal();
+		const int32 NumberOfProjectiles = 5;
 
-		// 4. Spawn Projectile
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = OwnerAvatarActor;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		for (int32 i = 0; i < NumberOfProjectiles; ++i)
+		{
+			// Calculate the rotation for this projectile
+			float Angle;
+			if (NumberOfProjectiles > 1)
+			{
+				// Spread projectiles evenly in the cone
+				Angle = (i / (float)(NumberOfProjectiles - 1)) * ConeSpreadAngle - (ConeSpreadAngle / 2.0f);
+			}
+			else
+			{
+				Angle = 0.f; // Only one projectile, no spread
+			}
 
-		AProjectileActor* Projectile = GetWorld()->SpawnActor<AProjectileActor>(ProjectileClass, SocketLocation, ProjectileRotation, SpawnParams);
-		if (Projectile)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[GA_Shoot] Projectile successfully spawned at %s, targeting %s"), *SocketLocation.ToString(), *TargetLocation.ToString());
-			Projectile->ShootProjectile(ShootProjectileSpeed, ShootProjectileRange, GetAimTargetIfValid(), GetOwnerTeamId(), MakeOutgoingGameplayEffectSpec(ProjectileHitEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("[GA_Shoot] Failed to spawn projectile!"));
+			// Rotate the central direction vector by the calculated angle
+			// We rotate around the owner's Up vector to spread them horizontally
+			FVector RotatedDirection = CentralDirection.RotateAngleAxis(Angle, OwnerAvatarActor->GetActorUpVector());
+
+			FRotator ProjectileRotation = RotatedDirection.Rotation();
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = OwnerAvatarActor;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			AProjectileActor* Projectile = GetWorld()->SpawnActor<AProjectileActor>(ProjectileClass, SocketLocation, ProjectileRotation, SpawnParams);
+			if (Projectile)
+			{
+				Projectile->ShootProjectile(ShootProjectileSpeed, ShootProjectileRange, FinalTarget, GetOwnerTeamId(), MakeOutgoingGameplayEffectSpec(ProjectileHitEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)));
+			}
 		}
 	}
 }
-
 
 AActor* UGA_Shoot::GetAimTargetIfValid() const
 {
@@ -199,32 +192,6 @@ AActor* UGA_Shoot::GetAimTargetIfValid() const
 		return AimTarget;
 
 	return nullptr;
-}
-
-void UGA_Shoot::FindAimTarget()
-{
-	if (HasValidTarget())
-		return;
-
-	if (AimTargetAbilitySystemComponent)
-	{
-		AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).RemoveAll(this);
-		AimTargetAbilitySystemComponent = nullptr;
-	}
-
-	AimTarget = GetAimTarget(ShootProjectileRange, ETeamAttitude::Hostile);
-	if (AimTarget)
-	{
-		AimTargetAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(AimTarget);
-		if (AimTargetAbilitySystemComponent)
-		{
-			AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).AddUObject(this, &UGA_Shoot::TargetDeadTagUpdated);
-		}
-	}
-
-	FGameplayEventData EventData;
-	EventData.Target = AimTarget;
-	SendLocalGameplayEvent(UCAbilitySystemStatics::GetTargetUpdatedTag(), EventData);
 }
 
 void UGA_Shoot::StartAimTargetCheckTimer()
@@ -273,5 +240,135 @@ void UGA_Shoot::TargetDeadTagUpdated(const FGameplayTag Tag, int32 NewCount)
 	if (NewCount > 0)
 	{
 		FindAimTarget();
+	}
+}
+
+void UGA_Shoot::FindAimTarget()
+{
+	AActor* PreviousTarget = AimTarget;
+	AActor* AutoTarget = GetClosestHostileInFront();
+
+	if (AutoTarget)
+	{
+		if (AimTarget != AutoTarget)
+		{
+			if (AimTargetAbilitySystemComponent)
+			{
+				AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).RemoveAll(this);
+				AimTargetAbilitySystemComponent = nullptr;
+			}
+
+			AimTarget = AutoTarget;
+
+			AimTargetAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(AimTarget);
+			if (AimTargetAbilitySystemComponent)
+			{
+				AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).AddUObject(this, &UGA_Shoot::TargetDeadTagUpdated);
+			}
+		}
+	}
+	else
+	{
+		if (AimTargetAbilitySystemComponent)
+		{
+			AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).RemoveAll(this);
+			AimTargetAbilitySystemComponent = nullptr;
+		}
+
+		AimTarget = GetAimTarget(ShootProjectileRange, ETeamAttitude::Hostile);
+		if (AimTarget)
+		{
+			AimTargetAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(AimTarget);
+			if (AimTargetAbilitySystemComponent)
+			{
+				AimTargetAbilitySystemComponent->RegisterGameplayTagEvent(UCAbilitySystemStatics::GetDeadStatTag()).AddUObject(this, &UGA_Shoot::TargetDeadTagUpdated);
+			}
+		}
+	}
+
+	if (PreviousTarget != AimTarget)
+	{
+		FGameplayEventData EventData;
+		EventData.Target = AimTarget;
+		SendLocalGameplayEvent(UCAbilitySystemStatics::GetTargetUpdatedTag(), EventData);
+	}
+}
+
+AActor* UGA_Shoot::GetClosestHostileInFront()
+{
+	AActor* OwnerActor = GetAvatarActorFromActorInfo();
+	if (!OwnerActor)
+		return nullptr;
+
+	FVector OwnerLocation = OwnerActor->GetActorLocation();
+	FVector OwnerForward = OwnerActor->GetActorForwardVector();
+
+	AActor* ClosestHostile = nullptr;
+	float ClosestDistance = FLT_MAX;
+
+	const float DotProductThreshold = FMath::Cos(FMath::DegreesToRadians(AutoTargetAngle));
+
+	TArray<AActor*> FoundActors;
+	GetActorsInRange(OwnerLocation, AutoTargetRange, FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		if (!Actor || Actor == OwnerActor)
+			continue;
+
+		if (GetTeamAttitudeTowards(*Actor) != ETeamAttitude::Hostile)
+			continue;
+
+		if (UCAbilitySystemStatics::IsActorDead(Actor))
+			continue;
+
+		FVector DirectionToTarget = (Actor->GetActorLocation() - OwnerLocation).GetSafeNormal();
+		float DotProduct = FVector::DotProduct(OwnerForward, DirectionToTarget);
+
+		if (DotProduct < DotProductThreshold)
+			continue;
+
+		float Distance = FVector::Dist(OwnerLocation, Actor->GetActorLocation());
+		float WeightedDistance = Distance * (2.0f - DotProduct);
+
+		if (WeightedDistance < ClosestDistance)
+		{
+			ClosestDistance = WeightedDistance;
+			ClosestHostile = Actor;
+		}
+	}
+
+	return ClosestHostile;
+}
+
+void UGA_Shoot::GetActorsInRange(const FVector& Center, float Range, TArray<AActor*>& OutActors)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = false;
+	QueryParams.AddIgnoredActor(GetAvatarActorFromActorInfo());
+
+	TArray<FOverlapResult> OverlapResults;
+	bool bHit = World->OverlapMultiByChannel(
+		OverlapResults,
+		Center,
+		FQuat::Identity,
+		ECC_Pawn,
+		FCollisionShape::MakeSphere(Range),
+		QueryParams
+	);
+
+	if (bHit)
+	{
+		for (const FOverlapResult& Result : OverlapResults)
+		{
+			if (Result.GetActor())
+			{
+				OutActors.Add(Result.GetActor());
+			}
+		}
 	}
 }

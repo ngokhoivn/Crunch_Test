@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GAS/TargetActor_Line.h"
@@ -81,92 +81,109 @@ void ATargetActor_Line::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void ATargetActor_Line::DoTargetCheckAndReport()
+void ATargetActor_Line::SweepAllTargetsAlongLine(TArray<FHitResult>& OutHits) const
 {
-	if (!HasAuthority())
+	if (!AvatarActor)
 		return;
 
-	TSet<AActor*> OverlappingActorSet;
-	TargetEndDetectionSphere->GetOverlappingActors(OverlappingActorSet);
+	FVector ViewLocation;
+	FRotator ViewRotation;
+	AvatarActor->GetActorEyesViewPoint(ViewLocation, ViewRotation);
 
-	TArray<TWeakObjectPtr<AActor>> OverlappingActors;
-	for (AActor* OverlappingActor : OverlappingActorSet)
-	{
-		if (ShouldReportActorAsTarget(OverlappingActor))
-		{
-			OverlappingActors.Add(OverlappingActor);
-		}
-	}
-
-	FGameplayAbilityTargetDataHandle TargetDataHandle;
-
-	FGameplayAbilityTargetData_ActorArray* ActorArray = new FGameplayAbilityTargetData_ActorArray;
-	ActorArray->SetActors(OverlappingActors);
-	TargetDataHandle.Add(ActorArray);
-
-	TargetDataReadyDelegate.Broadcast(TargetDataHandle);
-}
-
-void ATargetActor_Line::UpdateTargetTrace()
-{
-	FVector ViewLocation = GetActorLocation();
-	FRotator ViewRotation = GetActorRotation();
-	if (AvatarActor)
-	{
-		AvatarActor->GetActorEyesViewPoint(ViewLocation, ViewRotation);
-	}
-
-	FVector LookEndPoint = ViewLocation + ViewRotation.Vector() * 100000;
-	FRotator LookRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LookEndPoint);
-	SetActorRotation(LookRotation);
-
-	FVector SweepEndLocation = GetActorLocation() + LookRotation.Vector() * TargetRange;
-
-	TArray<FHitResult> HitResults;
+	FVector Start = ViewLocation;
+	FVector End = Start + ViewRotation.Vector() * TargetRange;
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(AvatarActor);
 	QueryParams.AddIgnoredActor(this);
 
-	FCollisionResponseParams CollisionResponseParams(ECR_Overlap);
-	GetWorld()->SweepMultiByChannel(HitResults, GetActorLocation(), SweepEndLocation, FQuat::Identity, ECC_WorldDynamic, FCollisionShape::MakeSphere(DetectionCylinderRadius), QueryParams, CollisionResponseParams);
+	GetWorld()->SweepMultiByChannel(
+		OutHits,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_WorldDynamic,
+		FCollisionShape::MakeSphere(DetectionCylinderRadius),
+		QueryParams
+	);
+}
 
-	FVector LineEndLocation = SweepEndLocation;
+
+void ATargetActor_Line::UpdateTargetTrace()
+{
+	if (!AvatarActor)
+	{
+		return;
+	}
+
+	TArray<FHitResult> HitResults;
+	SweepAllTargetsAlongLine(HitResults);
+
+	FVector ViewLocation;
+	FRotator ViewRotation;
+	AvatarActor->GetActorEyesViewPoint(ViewLocation, ViewRotation);
+
+	FVector LineEndLocation = ViewLocation + ViewRotation.Vector() * TargetRange;
 	float LineLength = TargetRange;
 
-	for (FHitResult& HitResult : HitResults)
+	for (const FHitResult& Hit : HitResults)
 	{
-		if (HitResult.GetActor())
+		if (ShouldReportActorAsTarget(Hit.GetActor()))
 		{
-			if (GetTeamAttitudeTowards(*HitResult.GetActor()) != ETeamAttitude::Friendly)
-			{
-				LineEndLocation = HitResult.ImpactPoint;
-				LineLength = FVector::Distance(GetActorLocation() , LineEndLocation);
-				break;
-			}
+			LineEndLocation = Hit.ImpactPoint;
+			LineLength = FVector::Distance(ViewLocation, LineEndLocation);
+			break;
 		}
 	}
 
 	TargetEndDetectionSphere->SetWorldLocation(LineEndLocation);
+
 	if (LazerVFX)
 	{
-		LazerVFX->SetVariableFloat(LazerFXLengthParamName, LineLength/100.f);
+		LazerVFX->SetVariableFloat(LazerFXLengthParamName, LineLength / 100.f);
 	}
 }
 
+
 bool ATargetActor_Line::ShouldReportActorAsTarget(const AActor* ActorToCheck) const
 {
-	if (!ActorToCheck)
+	if (!ActorToCheck || ActorToCheck == AvatarActor || ActorToCheck == this)
 		return false;
 
-	if (ActorToCheck == AvatarActor)
-		return false;
+	if (auto Attitude = Cast<IGenericTeamAgentInterface>(ActorToCheck))
+	{
+		return GetTeamAttitudeTowards(*ActorToCheck) == ETeamAttitude::Hostile;
+	}
 
-	if (ActorToCheck == this)
-		return false;
+	return false;
+}
 
-	if (GetTeamAttitudeTowards(*ActorToCheck) != ETeamAttitude::Hostile)
-		return false;
+void ATargetActor_Line::DoTargetCheckAndReport()
+{
+	if (!HasAuthority())
+		return;
 
-	return true;
+	TArray<FHitResult> HitResults;
+	SweepAllTargetsAlongLine(HitResults);
+
+	TArray<TWeakObjectPtr<AActor>> HostileTargets;
+
+	for (const FHitResult& Hit : HitResults)
+	{
+		if (ShouldReportActorAsTarget(Hit.GetActor()))
+		{
+			HostileTargets.AddUnique(Hit.GetActor());
+		}
+	}
+
+	FGameplayAbilityTargetDataHandle TargetDataHandle;
+
+	if (HostileTargets.Num() > 0)
+	{
+		FGameplayAbilityTargetData_ActorArray* ActorArray = new FGameplayAbilityTargetData_ActorArray();
+		ActorArray->SetActors(HostileTargets);
+		TargetDataHandle.Add(ActorArray);
+	}
+
+	TargetDataReadyDelegate.Broadcast(TargetDataHandle);
 }

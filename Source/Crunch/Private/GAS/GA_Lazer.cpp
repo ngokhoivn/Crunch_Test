@@ -100,5 +100,5 @@ void UGA_Lazer::TargetReceived(const FGameplayAbilityTargetDataHandle& TargetDat
 	{
 		BP_ApplyGameplayEffectToTarget(TargetDataHandle, HitDamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 	}
-	PushTargets(TargetDataHandle, GetAvatarActorFromActorInfo()->GetActorForwardVector() * HitPushSpeed, 0.1f);
+	PushTargets(TargetDataHandle, GetAvatarActorFromActorInfo()->GetActorForwardVector() * HitPushSpeed);
 }

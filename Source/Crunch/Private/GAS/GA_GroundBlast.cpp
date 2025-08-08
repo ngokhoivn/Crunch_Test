@@ -48,7 +48,7 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
     if (K2_HasAuthority())
     {
         BP_ApplyGameplayEffectToTarget(TargetDataHandle, DamageEffectDef.DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
-        PushTargets(TargetDataHandle, DamageEffectDef.PushVelocity, 0.5f);
+        PushTargets(TargetDataHandle, DamageEffectDef.PushVelocity);
     }
     FGameplayCueParameters BlastingGameplayCueParams;
     BlastingGameplayCueParams.Location = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 1).ImpactPoint;
